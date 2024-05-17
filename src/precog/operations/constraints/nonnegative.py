@@ -15,22 +15,28 @@ __email__ = __email__
 # Standard Libraries #
 from abc import abstractmethod
 from copy import deepcopy
-from typing import Any
+from typing import ClassVar, Any
 
 # Third-Party Packages #
 from baseobjects.functions import CallableMultiplexObject, MethodMultiplexer
+from blockobjects import BaseBlock
 import numpy as np
 
 # Local Packages #
-from ..operation import BaseOperation
 
 
 # Definitions #
 # Classes #
-class NonNegative(BaseOperation):
-    default_input_names: tuple[str, ...] = ("data",)
-    default_output_names: tuple[str, ...] = ("nn_data",)
-    default_non_negative: str = "clip"
+class NonNegative(BaseBlock):
+    # Class Attributes #
+    default_input_names: ClassVar[tuple[str, ...]] = ("data",)
+    default_output_names: ClassVar[tuple[str, ...]] = ("nn_data",)
+
+    default_non_negative: ClassVar[str] = "clip"
+
+    # Attributes #
+    non_negative: MethodMultiplexer
+    non_negative_kwargs: dict = {}
 
     # Magic Methods #
     # Construction/Destruction
@@ -39,15 +45,12 @@ class NonNegative(BaseOperation):
         non_negative: str | None = None,
         non_negative_kwargs: dict[str, Any] | None = None,
         *args: Any,
-        init_io: bool = True,
-        sets_up: bool = True,
-        setup_kwargs: dict[str, Any] | None = None,
         init: bool = True,
         **kwargs: Any,
     ) -> None:
         # New Attributes #
         self.non_negative: MethodMultiplexer = MethodMultiplexer(instance=self, select=self.default_non_negative)
-        self.non_negative_kwargs: dict = {}
+        self.non_negative_kwargs: dict = self.non_negative_kwargs.copy()
 
         # Parent Attributes #
         super().__init__(*args, init=False, **kwargs)
@@ -58,9 +61,6 @@ class NonNegative(BaseOperation):
                 *args,
                 non_negative=non_negative,
                 non_negative_kwargs=non_negative_kwargs,
-                init_io=init_io,
-                sets_up=sets_up,
-                setup_kwargs=setup_kwargs,
                 **kwargs,
             )
 
@@ -71,18 +71,12 @@ class NonNegative(BaseOperation):
         non_negative: str | None = None,
         non_negative_kwargs: dict[str, Any] | None = None,
         *args: str | None,
-        init_io: bool = True,
-        sets_up: Any = True,
-        setup_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         """Constructs this object.
 
         Args:
             *args: Arguments for inheritance.
-            init_io: Determines if construct_io run during this construction.
-            sets_up: Determines if setup will run during this construction.
-            setup_kwargs: The keyword arguments for the setup method.
             **kwargs: Keyword arguments for inheritance.
         """
         if non_negative is not None:
@@ -93,7 +87,7 @@ class NonNegative(BaseOperation):
             self.non_negative_kwargs.update(non_negative_kwargs)
 
         # Construct Parent #
-        super().construct(*args, init_io=init_io, sets_up=sets_up, setup_kwargs=setup_kwargs, **kwargs)
+        super().construct(*args, **kwargs)
 
     # Non-Negative
     def clip(self, data: np.ndarray, threshold: float = 0, **kwargs: Any) -> np.ndarray:
@@ -106,7 +100,7 @@ class NonNegative(BaseOperation):
         return data**2
 
     # Evaluate
-    def evaluate(self, data: np.ndarray | None = None , *args, **kwargs: Any) -> Any:
+    def evaluate(self, data: np.ndarray, *args, **kwargs: Any) -> Any:
         """An abstract method which is the evaluation of this object.
 
         Args:
@@ -116,15 +110,12 @@ class NonNegative(BaseOperation):
         Returns:
             The result of the evaluation.
         """
-        if data is None:
-            return None
-        else:
-            nn_data = self.non_negative(data, **self.non_negative_kwargs)
+        nn_data = self.non_negative(data, **self.non_negative_kwargs)
 
-            # Output
-            if hasattr(data, "data"):
-                data_deep = data.dataless_proxy_leaf_copy()
-                data_deep.data = nn_data
-                return data_deep
-            else:
-                return nn_data
+        # Output
+        if hasattr(data, "data"):
+            data_deep = data.dataless_proxy_leaf_copy()
+            data_deep.data = nn_data
+            return data_deep
+        else:
+            return nn_data

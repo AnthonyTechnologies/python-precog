@@ -26,8 +26,8 @@ from precog.operations.operation import BaseOperation
 # Classes #
 class SumOperation(BaseOperation):
     """An Operation which scales the input ndarray and returns its sum, minium, and maximum."""
-    default_input_names: tuple[str, ...] = ("data", "scale")
-    default_output_names: tuple[str, ...] = ("out_number", "scaled_min", "scaled_max")
+    default_input_names: ClassVar[tuple[str, ...]] = ("data", "scale")
+    default_output_names: ClassVar[tuple[str, ...]] = ("out_number", "scaled_min", "scaled_max")
 
     # Evaluate
     def evaluate(self, data: np.ndarray, scale: float | None = None, *args, **kwargs: Any) -> Any:

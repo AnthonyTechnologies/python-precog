@@ -18,21 +18,28 @@ from itertools import chain
 from typing import ClassVar, Any
 
 # Third-Party Packages #
+from blockobjects import BaseBlock
 import numpy as np
 from scipy.signal import filtfilt
 
 # Local Packages #
-from ..operation import BaseOperation
 from .basefilterbuilder import Filter, BaseFilterBuilder
 
 
 # Definitions #
 # Classes #
-class FilterBank(BaseOperation):
+class FilterBank(BaseBlock):
 
-    default_filter_builders: list[BaseFilterBuilder, ...] = []
+    # Class Attributes #
     default_input_names: ClassVar[tuple[str, ...]] = ("data",)
     default_output_names: ClassVar[tuple[str, ...]] = ("filter_data",)
+
+    # Attributes #
+    axis: int = 0
+
+    sample_rate: float | None = None
+    filter_builders: list[BaseFilterBuilder, ...] = []
+    filters: list[Filter] = []
 
     # Magic Methods #
     # Construction/Destruction
@@ -43,18 +50,12 @@ class FilterBank(BaseOperation):
         sample_rate: float | None = None,
         axis: int | None = None,
         *args: Any,
-        init_io: bool = True,
-        sets_up: bool = True,
-        setup_kwargs: dict[str, Any] | None = None,
         init: bool = True,
         **kwargs: Any,
     ) -> None:
         # New Attributes #
-        self.axis: int = 0
-
-        self.sample_rate: float | None = None
-        self.filter_builders: list[BaseFilterBuilder, ...] = self.default_filter_builders.copy()
-        self.filters: list[Filter] = []
+        self.filter_builders: list[BaseFilterBuilder, ...] = self.filter_builders.copy()
+        self.filters: list[Filter] = self.filters.copy()
 
         # Parent Attributes #
         super().__init__(*args, init=False, **kwargs)
@@ -67,9 +68,6 @@ class FilterBank(BaseOperation):
                 filters=filters,
                 sample_rate=sample_rate,
                 axis=axis,
-                init_io=init_io,
-                sets_up=sets_up,
-                setup_kwargs=setup_kwargs,
                 **kwargs,
             )
 
@@ -82,9 +80,6 @@ class FilterBank(BaseOperation):
         sample_rate: float | None = None,
         axis: int | None = None,
         *args: Any,
-        init_io: bool = True,
-        sets_up: bool = True,
-        setup_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         """Constructs this object.
@@ -112,7 +107,7 @@ class FilterBank(BaseOperation):
             self.axis = axis
 
         # Construct Parent #
-        super().construct(*args, init_io=init_io, sets_up=sets_up, setup_kwargs=setup_kwargs, **kwargs)
+        super().construct(*args, **kwargs)
 
     # Create Filters
     def create_filters(self):
@@ -126,6 +121,7 @@ class FilterBank(BaseOperation):
         self,
         sample_rate: float | None = None,
         axis: int | None = None,
+        create_filters: bool = True,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -136,10 +132,11 @@ class FilterBank(BaseOperation):
         if axis is not None:
             self.axis = axis
 
-        self.create_filters()
+        if create_filters:
+            self.create_filters()
 
     # Evaluate
-    def evaluate(self, data: np.ndarray | None = None, *args, **kwargs: Any) -> Any:
+    def evaluate(self, data: np.ndarray, *args, **kwargs: Any) -> Any:
         """An abstract method which is the evaluation of this object.
 
         Args:

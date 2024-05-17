@@ -28,6 +28,27 @@ from .basefilterbuilder import Filter, BaseFilterBuilder
 # Definitions #
 # Classes #
 class NotchFilterBuilder(BaseFilterBuilder):
+    # New Attributes #
+    axis: int = 0
+
+    sample_rate: float = 1.0
+    notch_frequency: float = 60.0
+    bandwidth: float = 2.0
+    notch_harmonics: bool = True
+    _nyquist_frequency: float = 0.0
+    _harmonics: np.ndarray | None = None
+
+    # Properties #
+    @property
+    def nyquist_frequency(self) -> float:
+        self._nyquist_frequency = self.sample_rate / 2
+        return self._nyquist_frequency
+
+    @property
+    def harmonics(self):
+        self._harmonics = np.arange(self.notch_frequency, self.nyquist_frequency, self.notch_frequency)
+        return self._harmonics
+
     # Magic Methods #
     # Construction/Destruction
     def __init__(
@@ -41,14 +62,6 @@ class NotchFilterBuilder(BaseFilterBuilder):
         **kwargs: Any,
     ) -> None:
         # New Attributes #
-        self.axis: int = 0
-
-        self.sample_rate: float = 1.0
-        self.notch_frequency: float = 60.0
-        self.bandwidth: float = 2.0
-        self.notch_harmonics: bool = True
-        self._nyquist_frequency: float = 0.0
-        self._harmonics: np.ndarray | None = None
 
         # Parent Attributes #
         super().__init__(*args, init=False, **kwargs)
@@ -63,16 +76,6 @@ class NotchFilterBuilder(BaseFilterBuilder):
                 notch_harmonics=notch_harmonics,
                 **kwargs,
             )
-
-    @property
-    def nyquist_frequency(self) -> float:
-        self._nyquist_frequency = self.sample_rate / 2
-        return self._nyquist_frequency
-
-    @property
-    def harmonics(self):
-        self._harmonics = np.arange(self.notch_frequency, self.nyquist_frequency, self.notch_frequency)
-        return self._harmonics
 
     # Instance Methods #
     # Constructors/Destructors

@@ -13,7 +13,7 @@ __email__ = __email__
 
 # Imports #
 # Standard Libraries #
-from typing import Any, ClassVar
+from typing import ClassVar, Any
 
 # Third-Party Packages #
 

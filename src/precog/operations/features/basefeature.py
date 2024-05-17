@@ -14,25 +14,26 @@ __email__ = __email__
 # Imports #
 # Standard Libraries #
 from abc import abstractmethod
-from typing import Any
+from typing import ClassVar, Any
 
 # Third-Party Packages #
+from blockobjects import BaseBlock
 import numpy as np
 
 # Local Packages #
-from ..operation import BaseOperation
 
 
 # Definitions #
 # Classes #
-class BaseFeature(BaseOperation):
-    default_input_names: tuple[str, ...] = ("data",)
-    default_output_names: tuple[str, ...] = ("features",)
+class BaseFeature(BaseBlock):
+    # Class Attributes #
+    default_input_names: ClassVar[tuple[str, ...]] = ("data",)
+    default_output_names: ClassVar[tuple[str, ...]] = ("features",)
 
     # Instance Methods #
     # Evaluate
     @abstractmethod
-    def evaluate(self, data: np.ndarray | None = None, *args, **kwargs: Any) -> Any:
+    def evaluate(self, data: np.ndarray, *args, **kwargs: Any) -> Any:
         """An abstract method which is the evaluation of this object.
 
         Args:

@@ -30,7 +30,7 @@ from .isequaloperation import IsEqualOperation
 # Classes #
 class ExampleOperationGroup(OperationGroup):
     """An Operation which generates a random array then finds the sum of the array twice and compares the outputs."""
-    default_output_names: tuple[str, ...] = ("group_result",)
+    default_output_names: ClassVar[tuple[str, ...]] = ("group_result",)
 
     # Instance Methods #
     # Setup

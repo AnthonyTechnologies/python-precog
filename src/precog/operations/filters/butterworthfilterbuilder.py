@@ -14,7 +14,7 @@ __email__ = __email__
 # Imports #
 # Standard Libraries #
 from collections.abc import Generator
-from typing import Any
+from typing import ClassVar, Any
 
 # Third-Party Packages #
 from scipy.signal import buttord, butter, sosfiltfilt
@@ -26,8 +26,15 @@ from .basefilterbuilder import Filter, BaseFilterBuilder
 # Definitions #
 # Classes #
 class ButterworthFilterBuilder(BaseFilterBuilder):
-    default_butter_type: str = "bandpass"
-    butter_types = {'bandpass', 'lowpass', 'highpass', 'bandstop'}
+    # Attributes #
+    butter_types: set[str] = {'bandpass', 'lowpass', 'highpass', 'bandstop'}
+    butter_type: str = "bandpass"
+
+    pass_frequency: float = 0.0
+    stop_frequency: float = 0.0
+    gpass: float = 3
+    gstop: float = 60.0
+    analog: bool = False
 
     # Magic Methods #
     # Construction/Destruction
@@ -45,13 +52,6 @@ class ButterworthFilterBuilder(BaseFilterBuilder):
         **kwargs: Any,
     ) -> None:
         # New Attributes #
-        self.pass_frequency: float = 0.0
-        self.stop_frequency: float = 0.0
-        self.gpass: float = 3
-        self.gstop: float = 60.0
-        self.analog: bool = False
-
-        self.butter_type: str = self.default_butter_type
 
         # Parent Attributes #
         super().__init__(*args, init=False, **kwargs)
@@ -153,7 +153,3 @@ class ButterworthFilterBuilder(BaseFilterBuilder):
         sos = butter(ford, wn, btype=self.butter_type, output='sos', fs=self.sample_rate)
 
         return (Filter(sosfiltfilt, {"sos": sos}) for _ in (0,))
-
-
-
-

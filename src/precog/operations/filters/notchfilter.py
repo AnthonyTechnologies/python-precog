@@ -13,21 +13,44 @@ __email__ = __email__
 
 # Imports #
 # Standard Libraries #
-from typing import Any
+from typing import ClassVar, Any
 
 # Third-Party Packages #
+from blockobjects import BaseBlock
 import numpy as np
 from scipy.signal import iirnotch, filtfilt
 
 # Local Packages #
-from ..operation import BaseOperation
 
 
 # Definitions #
 # Classes #
-class NotchFilter(BaseOperation):
-    default_input_names: tuple[str, ...] = ("data", )
-    default_output_names: tuple[str, ...] = ("filter_data",)
+class NotchFilter(BaseBlock):
+    # Class Attributes #
+    default_input_names: ClassVar[tuple[str, ...]] = ("data", )
+    default_output_names: ClassVar[tuple[str, ...]] = ("filter_data",)
+
+    # Attributes #
+    axis: int = 0
+
+    sample_rate: float = 1.0
+    notch_frequency: float = 60.0
+    bandwidth: float = 2.0
+    notch_harmonics: bool = True
+    _nyquist_frequency: float = 0.0
+    _harmonics: np.ndarray | None = None
+
+    filters: list = []
+
+    @property
+    def nyquist_frequency(self) -> float:
+        self._nyquist_frequency = self.sample_rate / 2
+        return self._nyquist_frequency
+
+    @property
+    def harmonics(self):
+        self._harmonics = np.arange(self.notch_frequency, self.nyquist_frequency, self.notch_frequency)
+        return self._harmonics
 
     # Magic Methods #
     # Construction/Destruction
@@ -39,9 +62,6 @@ class NotchFilter(BaseOperation):
         notch_harmonics: bool | None = True,
         axis: int | None = None,
         *args: Any,
-        init_io: bool = True,
-        sets_up: bool = True,
-        setup_kwargs: dict[str, Any] | None = None,
         init: bool = True,
         **kwargs: Any,
     ) -> None:
@@ -55,7 +75,7 @@ class NotchFilter(BaseOperation):
         self._nyquist_frequency: float = 0.0
         self._harmonics: np.ndarray | None = None
 
-        self.filters: list = []
+        self.filters: list = self.filters.copy()
 
         # Parent Attributes #
         super().__init__(*args, init=False, **kwargs)
@@ -69,21 +89,8 @@ class NotchFilter(BaseOperation):
                 bandwidth=bandwidth,
                 notch_harmonics=notch_harmonics,
                 axis=axis,
-                init_io=init_io,
-                sets_up=sets_up,
-                setup_kwargs=setup_kwargs,
                 **kwargs,
             )
-
-    @property
-    def nyquist_frequency(self) -> float:
-        self._nyquist_frequency = self.sample_rate / 2
-        return self._nyquist_frequency
-
-    @property
-    def harmonics(self):
-        self._harmonics = np.arange(self.notch_frequency, self.nyquist_frequency, self.notch_frequency)
-        return self._harmonics
 
     # Instance Methods #
     # Constructors/Destructors
@@ -95,9 +102,6 @@ class NotchFilter(BaseOperation):
         notch_harmonics: bool | None = True,
         axis: int | None = None,
         *args: Any,
-        init_io: bool = True,
-        sets_up: bool = True,
-        setup_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         """Constructs this object.
@@ -126,7 +130,7 @@ class NotchFilter(BaseOperation):
             self.axis = axis
 
         # Construct Parent #
-        super().construct(*args, init_io=init_io, sets_up=sets_up, setup_kwargs=setup_kwargs, **kwargs)
+        super().construct(*args, **kwargs)
 
     # Create Filters
     def create_filters(self):

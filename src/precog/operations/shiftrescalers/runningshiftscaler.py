@@ -15,14 +15,14 @@ __email__ = __email__
 # Standard Libraries #
 from abc import abstractmethod
 from copy import deepcopy
-from typing import Any
+from typing import ClassVar, Any
 
 # Third-Party Packages #
 from baseobjects.functions import MethodMultiplexer
+from blockobjects import BaseBlock
 import numpy as np
 
 # Local Packages #
-from ..operation import BaseOperation
 
 
 # Definitions #
@@ -31,12 +31,46 @@ blank_arg = object()
 
 
 # Classes #
-class RunningShiftScaler(BaseOperation):
-    default_input_names: tuple[str, ...] = ("data",)
-    default_output_names: tuple[str, ...] = ("ss_data",)
+class RunningShiftScaler(BaseBlock):
+    # Class Attributes #
+    default_input_names: ClassVar[tuple[str, ...]] = ("data",)
+    default_output_names: ClassVar[tuple[str, ...]] = ("ss_data",)
+
     default_burn_in: str = "burn_in_iter"
     default_shift_rescale: str = "shift_rescale_modified_zscore"
     default_forget: str = "exponential_forget"
+
+    # New Attributes #
+    axis: int = 0
+
+    previous_mean: np.ndarray | None = None
+    previous_mean_fill_value: float | int = 0
+
+    previous_variance: np.ndarray | None = None
+    previous_variance_fill_value: float | int = 10 ** -12
+
+    threshold: int | float = 10 ** 12
+
+    previous_count: int = 0
+
+    burn_in_count: int = 0
+    burn_in_threshold: int = 0
+
+    _forget_factor: float | None = None
+
+    # Properties #
+    @property
+    def forget_factor(self) -> float:
+        return self._forget_factor
+
+    @forget_factor.setter
+    def forget_factor(self, value) -> None:
+        if self.forget.selected in {None, "constant_forget", "exponential_forget"}:
+            if value is None:
+                self.forget.select("constant_forget")
+            else:
+                self.forget.select("exponential_forget")
+        self._forget_factor = value
 
     # Magic Methods #
     # Construction/Destruction
@@ -50,30 +84,10 @@ class RunningShiftScaler(BaseOperation):
         burn_in: int | None = None,
         axis: int | None = None,
         *args: Any,
-        init_io: bool = True,
-        sets_up: bool = True,
-        setup_kwargs: dict[str, Any] | None = None,
         init: bool = True,
         **kwargs: Any,
     ) -> None:
         # New Attributes #
-        self.axis: int = 0
-
-        self.previous_mean: np.ndarray | None = None
-        self.previous_mean_fill_value: float | int = 0
-
-        self.previous_variance: np.ndarray | None = None
-        self.previous_variance_fill_value: float | int = 10 ** -12
-
-        self.threshold: int | float = 10 ** 12
-
-        self.previous_count: int = 0
-
-        self.burn_in_count: int = 0
-        self.burn_in_threshold: int = 0
-
-        self._forget_factor: float | None = None
-
         self.is_burning_in: MethodMultiplexer = MethodMultiplexer(instance=self, select=self.default_burn_in)
         self.forget: MethodMultiplexer = MethodMultiplexer(instance=self, select=self.default_forget)
         self.shift_rescale: MethodMultiplexer = MethodMultiplexer(instance=self, select=self.default_shift_rescale)
@@ -92,24 +106,8 @@ class RunningShiftScaler(BaseOperation):
                 burn_in,
                 axis,
                 *args,
-                init_io=init_io,
-                setup_kwargs=setup_kwargs,
-                sets_up=sets_up,
                 **kwargs,
             )
-
-    @property
-    def forget_factor(self) -> float:
-        return self._forget_factor
-
-    @forget_factor.setter
-    def forget_factor(self, value) -> None:
-        if self.forget.selected in {None, "constant_forget", "exponential_forget"}:
-            if value is None:
-                self.forget.select("constant_forget")
-            else:
-                self.forget.select("exponential_forget")
-        self._forget_factor = value
 
     # Instance Methods #
     # Constructors/Destructors
@@ -123,9 +121,6 @@ class RunningShiftScaler(BaseOperation):
         burn_in: int | None = None,
         axis: int | None = None,
         *args: Any,
-        init_io: bool = True,
-        sets_up: bool = True,
-        setup_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         """Constructs this object.
@@ -159,7 +154,7 @@ class RunningShiftScaler(BaseOperation):
             self.burn_in_threshold = burn_in
 
         # Construct Parent #
-        super().construct(*args, init_io=init_io, sets_up=sets_up, setup_kwargs=setup_kwargs, **kwargs)
+        super().construct(*args, **kwargs)
 
     def create_previous_mean(self, shape, dtype):
         self.previous_mean = np.expand_dims(np.zeros(shape, dtype), self.axis)

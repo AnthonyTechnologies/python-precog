@@ -48,7 +48,7 @@ class RNGOperation(BaseOperation):
         init: Determines if this object will construct.
         **kwargs: Keyword arguments for inheritance.
     """
-    default_output_names: tuple[str, ...] = ("out_array",)
+    default_output_names: ClassVar[tuple[str, ...]] = ("out_array",)
 
     # Magic Methods #
     # Construction/Destruction

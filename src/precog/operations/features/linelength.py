@@ -15,10 +15,11 @@ __email__ = __email__
 # Standard Libraries #
 from abc import abstractmethod
 from copy import deepcopy
-from typing import Any, Callable
+from typing import ClassVar, Any, Callable
 
 # Third-Party Packages #
 import numpy as np
+from blockobjects import BaseBlock
 from scipy.signal import convolve
 from scipy.signal import hann
 
@@ -29,10 +30,12 @@ from .basefeature import BaseFeature
 # Definitions #
 # Classes #
 class LineLength(BaseFeature):
-    default_axis: int = 0
-    default_squared_estimator: bool = False
-    default_window_len: int = 0
-    default_window_type: Callable = hann
+
+    # Attributes #
+    axis: int = 0
+    squared_estimator: bool = False
+    window_len: int = 0
+    window_type: Callable = hann
 
     # Magic Methods #
     # Construction/Destruction
@@ -43,17 +46,10 @@ class LineLength(BaseFeature):
         window_type: Callable | None = None,
         axis: int | None = None,
         *args: Any,
-        init_io: bool = True,
-        sets_up: bool = True,
-        setup_kwargs: dict[str, Any] | None = None,
         init: bool = True,
         **kwargs: Any,
     ) -> None:
         # New Attributes #
-        self.axis: int = self.default_axis
-        self.squared_estimator: bool = self.default_squared_estimator
-        self.window_len: int = self.default_window_len
-        self.window_type: Callable = self.default_window_type
 
         # Parent Attributes #
         super().__init__(*args, init=False, **kwargs)
@@ -66,9 +62,6 @@ class LineLength(BaseFeature):
                 window_len=window_len,
                 window_type=window_type,
                 axis=axis,
-                init_io=init_io,
-                sets_up=sets_up,
-                setup_kwargs=setup_kwargs,
                 **kwargs,
             )
 
@@ -81,18 +74,12 @@ class LineLength(BaseFeature):
         window_type: Callable | None = None,
         axis: int | None = None,
         *args: Any,
-        init_io: bool = True,
-        sets_up: bool = True,
-        setup_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         """Constructs this object.
 
         Args:
             *args: Arguments for inheritance.
-            init_io: Determines if construct_io run during this construction.
-            sets_up: Determines if setup will run during this construction.
-            setup_kwargs: The keyword arguments for the setup method.
             **kwargs: Keyword arguments for inheritance.
         """
         if axis is not None:
@@ -108,10 +95,10 @@ class LineLength(BaseFeature):
             self.window_type = window_type
 
         # Construct Parent #
-        super().construct(*args, init_io=init_io, sets_up=sets_up, setup_kwargs=setup_kwargs, **kwargs)
+        super().construct(*args, **kwargs)
 
     # Evaluate
-    def evaluate(self, data: np.ndarray | None = None, *args, **kwargs: Any) -> Any:
+    def evaluate(self, data: np.ndarray, *args, **kwargs: Any) -> Any:
         """An abstract method which is the evaluation of this object.
 
         Args:
@@ -131,7 +118,8 @@ class LineLength(BaseFeature):
             data_ll = convolve(
                 data_ll,
                 self.window_type(self.window_len).reshape(-1, 1),
-                mode='same')
+                mode='same',
+            )
 
         if self.squared_estimator:
             data_ll = np.sqrt(data_ll)

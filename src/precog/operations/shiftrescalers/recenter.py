@@ -13,23 +13,31 @@ __email__ = __email__
 
 # Imports #
 # Standard Libraries #
-from typing import Any
+from typing import ClassVar, Any
 
 # Third-Party Packages #
 from baseobjects import MethodMultiplexer
+from blockobjects import BaseBlock
 import numpy as np
 
 # Local Packages #
-from ..operation import BaseOperation
 
 
 # Definitions #
 # Classes #
-class Recenter(BaseOperation):
-    default_input_names: tuple[str, ...] = ("data",)
-    default_output_names: tuple[str, ...] = ("r_data",)
-    default_find_center: str = "find_peak"
-    default_recenter: str = "roll"
+class Recenter(BaseBlock):
+    # Class Attributes #
+    default_input_names: ClassVar[tuple[str, ...]] = ("data",)
+    default_output_names: ClassVar[tuple[str, ...]] = ("r_data",)
+
+    default_find_center: ClassVar[str] = "find_peak"
+    default_recenter: ClassVar[str] = "roll"
+
+    # New Attributes #
+    axis: int | tuple[int, int] | None = 0
+
+    find_center: MethodMultiplexer
+    recenter: MethodMultiplexer
 
     # Magic Methods #
     # Construction/Destruction
@@ -37,15 +45,10 @@ class Recenter(BaseOperation):
         self,
         axis: int | tuple[int, int] | None = None,
         *args: Any,
-        init_io: bool = True,
-        sets_up: bool = True,
-        setup_kwargs: dict[str, Any] | None = None,
         init: bool = True,
         **kwargs: Any,
     ) -> None:
         # New Attributes #
-        self.axis: int | None = 0
-
         self.find_center = MethodMultiplexer(instance=self, select=self.default_find_center)
         self.recenter = MethodMultiplexer(instance=self, select=self.default_recenter)
 
@@ -57,9 +60,6 @@ class Recenter(BaseOperation):
             self.construct(
                 axis=axis,
                 *args,
-                init_io=init_io,
-                sets_up=sets_up,
-                setup_kwargs=setup_kwargs,
                 **kwargs,
             )
 
@@ -69,25 +69,19 @@ class Recenter(BaseOperation):
         self,
         axis: int | tuple[int, int] | None = None,
         *args: Any,
-        init_io: bool = True,
-        sets_up: bool = True,
-        setup_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         """Constructs this object.
 
         Args:
             *args: Arguments for inheritance.
-            init_io: Determines if construct_io run during this construction.
-            sets_up: Determines if setup will run during this construction.
-            setup_kwargs: The keyword arguments for the setup method.
             **kwargs: Keyword arguments for inheritance.
         """
         if axis is not None:
             self.axis = axis
 
         # Construct Parent #
-        super().construct(*args, init_io=init_io, sets_up=sets_up, setup_kwargs=setup_kwargs, **kwargs)
+        super().construct(*args, **kwargs)
 
     # Setup
     def setup(self, *args: Any, **kwargs: Any) -> None:
@@ -122,7 +116,7 @@ class Recenter(BaseOperation):
         return np.pad(data, width, mode="reflect")[tuple(slices)]
 
     # Evaluate
-    def evaluate(self, data: np.ndarray | None = None, *args, **kwargs: Any) -> Any:
+    def evaluate(self, data: np.ndarray, *args, **kwargs: Any) -> Any:
         """An abstract method which is the evaluation of this object.
 
         Args:

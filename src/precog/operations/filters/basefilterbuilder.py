@@ -34,6 +34,9 @@ class Filter(NamedTuple):
 
 
 class BaseFilterBuilder(BaseObject):
+    # New Attributes #
+    sample_rate: float | None = None
+
     # Magic Methods #
     # Construction/Destruction
     def __init__(
@@ -44,7 +47,6 @@ class BaseFilterBuilder(BaseObject):
         **kwargs: Any,
     ) -> None:
         # New Attributes #
-        self.sample_rate: float | None = None
 
         # Parent Attributes #
         super().__init__(*args, init=False, **kwargs)
@@ -93,7 +95,3 @@ class BaseFilterBuilder(BaseObject):
 
     def create_filters(self, sample_rate: float | None = None, **kwargs: Any) -> tuple[Filter, ...]:
         return tuple(self.create_filters_iter(sample_rate=sample_rate, **kwargs))
-
-
-
-

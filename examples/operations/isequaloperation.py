@@ -45,8 +45,8 @@ class IsEqualOperation(BaseOperation):
         init: Determines if this object will construct.
         **kwargs: Keyword arguments for inheritance.
     """
-    default_input_names: tuple[str, ...] = ("data",)
-    default_output_names: tuple[str, ...] = ("result",)
+    default_input_names: ClassVar[tuple[str, ...]] = ("data",)
+    default_output_names: ClassVar[tuple[str, ...]] = ("result",)
     default_equals_method: str = "all"
 
     # Magic Methods #

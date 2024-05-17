@@ -16,22 +16,30 @@ __email__ = __email__
 from collections.abc import Iterable, Generator
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import Any
+from typing import ClassVar, Any
 
 # Third-Party Packages #
 from baseobjects.functions import MethodMultiplexer
+from blockobjects import BaseBlock
 import numpy as np
 from proxyarrays import BaseProxyArray, BaseTimeAxis, BaseTimeSeries
 
 # Local Packages #
-from ..operation import BaseOperation
 
 
 # Definitions #
 # Classes #
-class ProxyArrayStreamer(BaseOperation):
-    default_output_names: tuple[str, ...] = ("data",)
+class ProxyArrayStreamer(BaseBlock):
+
+    # Class Attributes #
+    default_output_names: ClassVar[tuple[str, ...]] = ("data",)
     default_create_generator: str = "create_islices"
+
+    # Attributes #
+    proxy_array: BaseProxyArray | None = None
+    empty_signal: Any = None
+
+    generator: Generator | None = None
 
     # Magic Methods #
     # Construction/Destruction
@@ -47,11 +55,6 @@ class ProxyArrayStreamer(BaseOperation):
         **kwargs: Any,
     ) -> None:
         # New Attributes #
-        self.proxy_array: BaseProxyArray | None = None
-        self.empty_signal: Any = None
-
-        self.generator: Generator | None = None
-
         self.create_generator: MethodMultiplexer = MethodMultiplexer(
             instance=self,
             select=self.default_create_generator,

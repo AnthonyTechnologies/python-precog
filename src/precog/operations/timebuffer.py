@@ -26,8 +26,8 @@ from .operation import BaseOperation
 # Definitions #
 # Classes #
 class TimeBuffer(BaseOperation):
-    default_input_names: tuple[str, ...] = ("data", )
-    default_output_names: tuple[str, ...] = ("buffer_data",)
+    default_input_names: ClassVar[tuple[str, ...]] = ("data", )
+    default_output_names: ClassVar[tuple[str, ...]] = ("buffer_data",)
 
     # New Attributes #
     axis: int = 1

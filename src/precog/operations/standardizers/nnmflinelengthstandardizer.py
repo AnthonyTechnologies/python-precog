@@ -17,10 +17,10 @@ from abc import abstractmethod
 from typing import ClassVar, Any, Callable
 
 # Third-Party Packages #
+from blockobjects import BlockGroup
 import numpy as np
 
 # Local Packages #
-from ..operation import OperationGroup
 from ..features import LineLength
 from ..shiftrescalers import RunningShiftScaler, blank_arg
 from ..constraints import NonNegative
@@ -28,7 +28,7 @@ from ..constraints import NonNegative
 
 # Definitions #
 # Classes #
-class NNMFLineLengthStandardizer(OperationGroup):
+class NNMFLineLengthStandardizer(BlockGroup):
     # Class Attributes #
     default_input_names: ClassVar[tuple[str, ...]] = ("data",)
     default_output_names: ClassVar[tuple[str, ...]] = ("features",)

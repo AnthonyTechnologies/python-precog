@@ -14,20 +14,26 @@ __email__ = __email__
 # Imports #
 # Standard Libraries #
 from copy import deepcopy
-from typing import Any
+from typing import ClassVar, Any
 
 # Third-Party Packages #
+from blockobjects import BaseBlock
 import numpy as np
 
 # Local Packages #
-from .operation import BaseOperation
 
 
 # Definitions #
 # Classes #
-class Remapper(BaseOperation):
-    default_input_names: tuple[str, ...] = ("data", "map_matrix")
-    default_output_names: tuple[str, ...] = ("remapped_data",)
+class Remapper(BaseBlock):
+    # Class Attributes #
+    default_input_names: ClassVar[tuple[str, ...]] = ("data", "map_matrix")
+    default_required_input: ClassVar[tuple[str, ...]] = ("data",)
+    default_output_names: ClassVar[tuple[str, ...]] = ("remapped_data",)
+
+    # New Attributes #
+    axis: int = 1
+    map_matrix: np.ndarray | None = None
 
     # Magic Methods #
     # Construction/Destruction
@@ -36,15 +42,10 @@ class Remapper(BaseOperation):
         map_matrix: np.ndarray | None = None,
         axis: int | None = None,
         *args: Any,
-        init_io: bool = True,
-        sets_up: bool = True,
-        setup_kwargs: dict[str, Any] | None = None,
         init: bool = True,
         **kwargs: Any,
     ) -> None:
         # New Attributes #
-        self.axis: int = 1
-        self.map_matrix = None
 
         # Parent Attributes #
         super().__init__(*args, init=False, **kwargs)
@@ -55,9 +56,6 @@ class Remapper(BaseOperation):
                 *args,
                 map_matrix=map_matrix,
                 axis=axis,
-                init_io=init_io,
-                sets_up=sets_up,
-                setup_kwargs=setup_kwargs,
                 **kwargs,
             )
 
@@ -68,9 +66,6 @@ class Remapper(BaseOperation):
         map_matrix: np.ndarray | None = None,
         axis: int | None = None,
         *args: Any,
-        init_io: bool = True,
-        sets_up: bool = True,
-        setup_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         """Constructs this object.
@@ -91,7 +86,7 @@ class Remapper(BaseOperation):
             self.axis = axis
 
         # Construct Parent #
-        super().construct(*args, init_io=init_io, sets_up=sets_up, setup_kwargs=setup_kwargs, **kwargs)
+        super().construct(*args, **kwargs)
 
     # Setup
     def setup(self, map_matrix: np.ndarray | None = None, *args: Any, **kwargs: Any) -> None:
@@ -100,7 +95,7 @@ class Remapper(BaseOperation):
             self.map_matrix = map_matrix
 
     # Evaluate
-    def evaluate(self, data: np.ndarray | None = None, map_matrix: np.ndarray | None = None, *args, **kwargs: Any) -> Any:
+    def evaluate(self, data: np.ndarray, map_matrix: np.ndarray | None = None, *args, **kwargs: Any) -> Any:
         """An abstract method which is the evaluation of this object.
 
         Args:
