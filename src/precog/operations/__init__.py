@@ -13,7 +13,6 @@ __email__ = __email__
 
 # Imports #
 # Local Packages #
-from .operation import *
 from .features import *
 from .constraints import *
 from .filters import *

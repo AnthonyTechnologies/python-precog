@@ -17,10 +17,10 @@ from collections.abc import Mapping
 from typing import ClassVar, Any
 
 # Third-Party Packages #
+from blockobjects import BaseBlock, BlockGroup
+from blockobjects.io import DelegatingIOManager, BaseIO, IORouter
 
 # Local Packages #
-from ..operations import BaseOperation, OperationGroup
-from ..operations.operation.io import IOManager, IORouter, IODelegator
 from ..architectures.torch import BaseNNMFModule, NNMFDModule
 from ..basis import ModelBasis
 from ..basis.modifiers import AdaptiveMultiplicativeModifier
@@ -29,7 +29,7 @@ from ..trainers.bases import BaseTrainerOperation
 
 # Definitions #
 # Classes #
-class EnsembleTrainer(OperationGroup, BaseTrainerOperation):
+class EnsembleTrainer(BlockGroup, BaseTrainerOperation):
     # Class Attributes #
     default_input_names: ClassVar[tuple[str, ...]] = ("data",)
     default_output_names:  ClassVar[tuple[str, ...]] = ("bases",)
@@ -45,7 +45,7 @@ class EnsembleTrainer(OperationGroup, BaseTrainerOperation):
         create_defaults: bool = False,
         bases_kwargs: dict[str, dict[str, Any]] | None = None,
         subtrainers_kwargs: dict[str, dict[str, Any]] | None = None,
-        operations: Mapping[str, BaseOperation] | None = None,
+        operations: Mapping[str, BaseBlock] | None = None,
         init_io: bool = True,
         sets_up: bool = True,
         setup_kwargs: bool = None,
@@ -82,7 +82,7 @@ class EnsembleTrainer(OperationGroup, BaseTrainerOperation):
         create_defaults: bool = False,
         bases_kwargs: dict[str, dict[str, Any]] | None = None,
         subtrainers_kwargs: dict[str, dict[str, Any]] | None = None,
-        operations: Mapping[str, BaseOperation] | None = None,
+        operations: Mapping[str, BaseBlock] | None = None,
         init_io: bool = True,
         sets_up: bool = True,
         setup_kwargs: bool = None,
@@ -105,12 +105,12 @@ class EnsembleTrainer(OperationGroup, BaseTrainerOperation):
 
     # Operations
     def create_operations(self, *args: Any, override: bool = False, **kwargs: Any) -> None:
-        """Creates the inner operations.
+        """Creates the inner blocks.
 
         Args:
-            *args: The arguments for creating the inner operations.
-            override: Determines if the inner operations will be overridden.
-            **kwargs: The keyword arguments for creating the inner operations.
+            *args: The arguments for creating the inner blocks.
+            override: Determines if the inner blocks will be overridden.
+            **kwargs: The keyword arguments for creating the inner blocks.
         """
         for name, trainer in self.subtrainers.items():
             if name not in self.operations or override:

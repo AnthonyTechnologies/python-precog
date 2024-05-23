@@ -18,17 +18,17 @@ from typing import ClassVar, Any
 
 # Third-Party Packages #
 from baseobjects import BaseObject
+from blockobjects import BaseBlock
 import numpy as np
 
 # Local Packages #
 from ...basis import ModelBasis
-from ...operations import BaseOperation
 from .basetrainer import BaseTrainer
 
 
 # Definitions #
 # Classes #
-class BaseTrainerOperation(BaseTrainer, BaseOperation):
+class BaseTrainerOperation(BaseTrainer, BaseBlock):
     # Attributes #
     default_input_names: ClassVar[tuple[str, ...]] = ("data",)
     default_output_names: ClassVar[tuple[str, ...]] = ("bases",)

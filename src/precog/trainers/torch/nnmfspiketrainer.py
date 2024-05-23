@@ -17,10 +17,10 @@ from collections.abc import Mapping
 from typing import ClassVar, Any
 
 # Third-Party Packages #
+from blockobjects import BaseBlock, BlockGroup
+from blockobjects.io import DelegatingIOManager, BaseIO, IORouter
 
 # Local Packages #
-from ...operations import BaseOperation, OperationGroup
-from ...operations.operation.io import IOManager
 from ...architectures.torch import BaseNNMFModule, NNMFDModule
 from ...basis import ModelBasis
 from ...basis.modifiers import AdaptiveMultiplicativeModifier
@@ -30,7 +30,7 @@ from ..bases import BaseTrainerOperation
 
 # Definitions #
 # Classes #
-class NNMFSpikeTrainer(OperationGroup, BaseTrainerOperation):
+class NNMFSpikeTrainer(BlockGroup, BaseTrainerOperation):
     # Class Attributes #
     default_input_names: ClassVar[tuple[str, ...]] = ("data",)
     default_output_names:  ClassVar[tuple[str, ...]] = ("bases",)
@@ -80,10 +80,10 @@ class NNMFSpikeTrainer(OperationGroup, BaseTrainerOperation):
     # Construction/Destruction
     def __init__(
         self,
-        W_modifier: BaseOperation | BaseNNMFModule | AdaptiveMultiplicativeModifier | dict[str, Any] | None = None,
-        H_modifier: BaseOperation | BaseNNMFModule | AdaptiveMultiplicativeModifier | dict[str, Any] | None = None,
-        W_refiner: BaseOperation | dict[str, Any] | None = None,
-        H_refiner: BaseOperation | dict[str, Any] | None = None,
+        W_modifier: BaseBlock | BaseNNMFModule | AdaptiveMultiplicativeModifier | dict[str, Any] | None = None,
+        H_modifier: BaseBlock | BaseNNMFModule | AdaptiveMultiplicativeModifier | dict[str, Any] | None = None,
+        W_refiner: BaseBlock | dict[str, Any] | None = None,
+        H_refiner: BaseBlock | dict[str, Any] | None = None,
         *args: Any,
         bases: dict[str, ModelBasis] | None = None,
         state_variables: dict[str, Any] | None = None,
@@ -91,7 +91,7 @@ class NNMFSpikeTrainer(OperationGroup, BaseTrainerOperation):
         create_defaults: bool = False,
         bases_kwargs: dict[str, dict[str, Any]] | None = None,
         subtrainers_kwargs: dict[str, dict[str, Any]] | None = None,
-        operations: Mapping[str, BaseOperation] | None = None,
+        operations: Mapping[str, BaseBlock] | None = None,
         init_io: bool = True,
         sets_up: bool = True,
         setup_kwargs: bool = None,
@@ -131,10 +131,10 @@ class NNMFSpikeTrainer(OperationGroup, BaseTrainerOperation):
     # Constructors/Destructors
     def construct(
         self,
-        W_modifier: BaseOperation | BaseNNMFModule | AdaptiveMultiplicativeModifier | dict[str, Any] | None = None,
-        H_modifier: BaseOperation | BaseNNMFModule | AdaptiveMultiplicativeModifier | dict[str, Any] | None = None,
-        W_refiner: BaseOperation | dict[str, Any] | None = None,
-        H_refiner: BaseOperation | dict[str, Any] | None = None,
+        W_modifier: BaseBlock | BaseNNMFModule | AdaptiveMultiplicativeModifier | dict[str, Any] | None = None,
+        H_modifier: BaseBlock | BaseNNMFModule | AdaptiveMultiplicativeModifier | dict[str, Any] | None = None,
+        W_refiner: BaseBlock | dict[str, Any] | None = None,
+        H_refiner: BaseBlock | dict[str, Any] | None = None,
         *args: Any,
         bases: dict[str, ModelBasis] | None = None,
         state_variables: dict[str, Any] | None = None,
@@ -142,7 +142,7 @@ class NNMFSpikeTrainer(OperationGroup, BaseTrainerOperation):
         create_defaults: bool = False,
         bases_kwargs: dict[str, dict[str, Any]] | None = None,
         subtrainers_kwargs: dict[str, dict[str, Any]] | None = None,
-        operations: Mapping[str, BaseOperation] | None = None,
+        operations: Mapping[str, BaseBlock] | None = None,
         init_io: bool = True,
         sets_up: bool = True,
         setup_kwargs: bool = None,
@@ -175,7 +175,7 @@ class NNMFSpikeTrainer(OperationGroup, BaseTrainerOperation):
         if operations is None:
             operations = {}
         
-        if isinstance(W_modifier, BaseOperation):
+        if isinstance(W_modifier, BaseBlock):
             operations["W_modifier"] = W_modifier
         elif isinstance(W_modifier, BaseNNMFModule):
             self.W_architecture = W_modifier
@@ -184,7 +184,7 @@ class NNMFSpikeTrainer(OperationGroup, BaseTrainerOperation):
         elif isinstance(W_modifier, dict):
             self.W_modifier_kwargs.update(W_modifier)
             
-        if isinstance(H_modifier, BaseOperation):
+        if isinstance(H_modifier, BaseBlock):
             operations["H_modifier"] = H_modifier
         elif isinstance(H_modifier, BaseNNMFModule):
             self.H_architecture = H_modifier
@@ -193,12 +193,12 @@ class NNMFSpikeTrainer(OperationGroup, BaseTrainerOperation):
         elif isinstance(H_modifier, dict):
             self.H_modifier_kwargs.update(H_modifier)
             
-        if isinstance(W_refiner, BaseOperation):
+        if isinstance(W_refiner, BaseBlock):
             operations["W_refiner"] = W_refiner
         elif isinstance(W_refiner, dict):
             self.W_refiner_kwargs.update(W_refiner)
             
-        if isinstance(H_refiner, BaseOperation):
+        if isinstance(H_refiner, BaseBlock):
             operations["H_refiner"] = H_refiner
         elif isinstance(H_refiner, dict):
             self.H_refiner_kwargs.update(H_refiner)
@@ -297,14 +297,14 @@ class NNMFSpikeTrainer(OperationGroup, BaseTrainerOperation):
 
         # Inner IO
         if H_refiner is not None:
-            H_modifier.outputs["m_bases"] = bases_separator_H = IOManager(names=("H",))
+            H_modifier.outputs["m_bases"] = bases_separator_H = DelegatingIOManager(names=("H",))
             bases_separator_H["H"] = H_refiner.inputs["basis"]
             H_refiner.outputs["r_bases"] = W_modifier.inputs["bases"]
         else:
             H_modifier.outputs["m_bases"] = W_modifier.inputs["bases"]
 
         if W_refiner is not None:
-            W_modifier.outputs["m_bases"] = bases_separator_W = IOManager(names=("W",))
+            W_modifier.outputs["m_bases"] = bases_separator_W = DelegatingIOManager(names=("W",))
             bases_separator_W["W"] = W_refiner.inputs["bases"]
 
             # Set Output
@@ -323,14 +323,14 @@ class NNMFSpikeTrainer(OperationGroup, BaseTrainerOperation):
         link_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
-        """Creates the inner operations and links their IO.
+        """Creates the inner blocks and links their IO.
 
         Args:
             *args: The arguments for setup.
             create: Determines if the inner operation will be created.
-            create_kwargs: The keyword arguments for creating the inner operations.
-            link: Determines if the inner IO will be linked between operations.
-            link_kwargs: The keyword arguments for creating linking the inner operations' IO.
+            create_kwargs: The keyword arguments for creating the inner blocks.
+            link: Determines if the inner IO will be linked between blocks.
+            link_kwargs: The keyword arguments for creating linking the inner blocks' IO.
             **kwargs: The keyword arguments for setup.
         """
         if create_kwargs is None:

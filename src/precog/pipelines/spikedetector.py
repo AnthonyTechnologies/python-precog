@@ -17,10 +17,10 @@ from collections.abc import Mapping
 from typing import Any, Callable
 
 # Third-Party Packages #
+from blockobjects import BaseBlock, BlockGroup
 import numpy as np
 
 # Local Packages #
-from ..operations.operation import BaseOperation, OperationGroup
 from ..operations.streamers import CDFSStreamer
 from ..operations.remapper import Remapper
 from ..operations.preprocessingfilterbank import PreprocessingFilterBank
@@ -32,7 +32,7 @@ from ..models.torch import NNMFDTorchModel
 
 # Definitions #
 # Classes #
-class SpikeDetector(OperationGroup):
+class SpikeDetector(BlockGroup):
     # Attributes #
     streamer_type = CDFSStreamer
     remapper_type = Remapper
@@ -49,14 +49,14 @@ class SpikeDetector(OperationGroup):
     def __init__(
         self,
         model: BaseModel | None = None,
-        streamer: BaseOperation | dict[str, Any] | None = None,
-        remapper: BaseOperation | dict[str, Any] | None = None,
-        preprocessing: BaseOperation | dict[str, Any] | None = None,
-        standardizer: BaseOperation | dict[str, Any] | None = None,
-        time_buffer: BaseOperation | dict[str, Any] | None = None,
-        detector: BaseOperation | dict[str, Any] | None = None,
+        streamer: BaseBlock | dict[str, Any] | None = None,
+        remapper: BaseBlock | dict[str, Any] | None = None,
+        preprocessing: BaseBlock | dict[str, Any] | None = None,
+        standardizer: BaseBlock | dict[str, Any] | None = None,
+        time_buffer: BaseBlock | dict[str, Any] | None = None,
+        detector: BaseBlock | dict[str, Any] | None = None,
         *args: Any,
-        operations: Mapping[str, BaseOperation] | None = None,
+        blocks: Mapping[str, BaseBlock] | None = None,
         init_io: bool = True,
         sets_up: bool = True,
         setup_kwargs: dict[str, Any] | None = None,
@@ -76,7 +76,7 @@ class SpikeDetector(OperationGroup):
                 standardizer=standardizer,
                 time_buffer=time_buffer,
                 detector=detector,
-                operations=operations,
+                blocks=blocks,
                 init_io=init_io,
                 sets_up=sets_up,
                 setup_kwargs=setup_kwargs,
@@ -88,14 +88,14 @@ class SpikeDetector(OperationGroup):
     def construct(
         self,
         model: BaseModel | None = None,
-        streamer: BaseOperation | dict[str, Any] | None = None,
-        remapper: BaseOperation | dict[str, Any] | None = None,
-        preprocessing: BaseOperation | dict[str, Any] | None = None,
-        standardizer: BaseOperation | dict[str, Any] | None = None,
-        time_buffer: BaseOperation | dict[str, Any] | None = None,
-        detector: BaseOperation | dict[str, Any] | None = None,
+        streamer: BaseBlock | dict[str, Any] | None = None,
+        remapper: BaseBlock | dict[str, Any] | None = None,
+        preprocessing: BaseBlock | dict[str, Any] | None = None,
+        standardizer: BaseBlock | dict[str, Any] | None = None,
+        time_buffer: BaseBlock | dict[str, Any] | None = None,
+        detector: BaseBlock | dict[str, Any] | None = None,
         *args: Any,
-        operations: Mapping[str, BaseOperation] | None = None,
+        blocks: Mapping[str, BaseBlock] | None = None,
         init_io: Any = True,
         sets_up: bool = True,
         setup_kwargs: dict[str, Any] | None = None,
@@ -104,7 +104,7 @@ class SpikeDetector(OperationGroup):
         """Constructs this object.
 
         Args:
-            operations: The dictionary of Operation to add to the OperationGroup.
+            blocks: The dictionary of Block to add to the BlockGroup.
             *args: Arguments for inheritance.
             init_io: Determines if construct_io run during this construction.
             sets_up: Determines if setup will run during this construction.
@@ -115,36 +115,36 @@ class SpikeDetector(OperationGroup):
         if model is not None:
             self.model = model
         
-        # Kwargs for Operation Creation
+        # Kwargs for Block Creation
         create_kwargs = {}
         
-        if isinstance(streamer, BaseOperation):
-            self.operations["streamer"] = streamer
+        if isinstance(streamer, BaseBlock):
+            self.blocks["streamer"] = streamer
         elif isinstance(streamer, dict):
             create_kwargs["streamer_kwargs"] = streamer
             
-        if isinstance(remapper, BaseOperation):
-            self.operations["remapper"] = remapper
+        if isinstance(remapper, BaseBlock):
+            self.blocks["remapper"] = remapper
         elif isinstance(remapper, dict):
             create_kwargs["remapper_kwargs"] = remapper
             
-        if isinstance(preprocessing, BaseOperation):
-            self.operations["preprocessing"] = preprocessing
+        if isinstance(preprocessing, BaseBlock):
+            self.blocks["preprocessing"] = preprocessing
         elif isinstance(preprocessing, dict):
             create_kwargs["preprocessing_kwargs"] = preprocessing
             
-        if isinstance(standardizer, BaseOperation):
-            self.operations["standardizer"] = standardizer
+        if isinstance(standardizer, BaseBlock):
+            self.blocks["standardizer"] = standardizer
         elif isinstance(standardizer, dict):
             create_kwargs["standardizer_kwargs"] = standardizer
         
-        if isinstance(time_buffer, BaseOperation):
-            self.operations["time_buffer"] = time_buffer
+        if isinstance(time_buffer, BaseBlock):
+            self.blocks["time_buffer"] = time_buffer
         elif isinstance(time_buffer, dict):
             create_kwargs["time_buffer_kwargs"] = time_buffer
         
-        if isinstance(detector, BaseOperation):
-            self.operations["detector"] = detector
+        if isinstance(detector, BaseBlock):
+            self.blocks["detector"] = detector
         elif isinstance(detector, dict):
             create_kwargs["detector_kwargs"] = detector
 
@@ -155,18 +155,18 @@ class SpikeDetector(OperationGroup):
 
         # Construct Parent #
         super().construct(
-            operations=operations,
+            blocks=blocks,
             init_io=init_io,
             sets_up=sets_up,
             setup_kwargs=setup_kwargs,
             **kwargs,
         )
 
-    # Operations
-    def create_detector(self, *args, **kwargs) -> BaseOperation:
+    # Blocks
+    def create_detector(self, *args, **kwargs) -> BaseBlock:
         return self.model.trainer
 
-    def create_operations(
+    def create_blocks(
         self,
         streamer_kwargs: dict[str, Any] | None = None,
         remapper_kwargs: dict[str, Any] | None = None,
@@ -177,23 +177,23 @@ class SpikeDetector(OperationGroup):
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        # Create Operations
-        self.operations["streamer"] = self.streamer_type(**(streamer_kwargs or {}))
-        self.operations["remapper"] = self.remapper_type(**(remapper_kwargs or {}))
-        self.operations["preprocessing"] = self.preprocessing_type(**(preprocessing_kwargs or {}))
-        self.operations["standardizer"] = self.standardizer_type(**(standardizer_kwargs or {}))
-        self.operations["time_buffer"] = self.time_buffer_type(**(time_buffer_kwargs or {}))
-        self.operations["detector"] = self.create_detector(**(detector_kwargs or {}))
+        # Create Blocks
+        self.blocks["streamer"] = self.streamer_type(**(streamer_kwargs or {}))
+        self.blocks["remapper"] = self.remapper_type(**(remapper_kwargs or {}))
+        self.blocks["preprocessing"] = self.preprocessing_type(**(preprocessing_kwargs or {}))
+        self.blocks["standardizer"] = self.standardizer_type(**(standardizer_kwargs or {}))
+        self.blocks["time_buffer"] = self.time_buffer_type(**(time_buffer_kwargs or {}))
+        self.blocks["detector"] = self.create_detector(**(detector_kwargs or {}))
 
     # IO
     def link_inner_io(self, *args: Any, **kwargs: Any) -> None:
-        # Get Operations
-        streamer = self.operations["streamer"]
-        remapper = self.operations["remapper"]
-        preprocessing = self.operations["preprocessing"]
-        standardizer = self.operations["standardizer"]
-        time_buffer = self.operations["time_buffer"]
-        detector = self.operations["detector"]
+        # Get Blocks
+        streamer = self.blocks["streamer"]
+        remapper = self.blocks["remapper"]
+        preprocessing = self.blocks["preprocessing"]
+        standardizer = self.blocks["standardizer"]
+        time_buffer = self.blocks["time_buffer"]
+        detector = self.blocks["detector"]
 
         # Inner IO
         streamer.outputs["data"] = remapper.inputs["data"]
@@ -216,14 +216,14 @@ class SpikeDetector(OperationGroup):
         link_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
-        """Creates the inner operations and links their IO.
+        """Creates the inner blocks and links their IO.
 
         Args:
             *args: The arguments for setup.
-            create: Determines if the inner operation will be created.
-            create_kwargs: The keyword arguments for creating the inner operations.
-            link: Determines if the inner IO will be linked between operations.
-            link_kwargs: The keyword arguments for creating linking the inner operations' IO.
+            create: Determines if the inner block will be created.
+            create_kwargs: The keyword arguments for creating the inner blocks.
+            link: Determines if the inner IO will be linked between blocks.
+            link_kwargs: The keyword arguments for creating linking the inner blocks' IO.
             **kwargs: The keyword arguments for setup.4
         """
         if self.model is None:

@@ -1,5 +1,5 @@
 """ nnmflinelengthstandardizer.py
-An abstract class which defines an Operation, an easily definable data processing block with inputs and outputs.
+An abstract class which defines an Block, an easily definable data processing block with inputs and outputs.
 """
 # Package Header #
 from ...header import *
@@ -50,8 +50,6 @@ class NNMFLineLengthStandardizer(BlockGroup):
         non_negative_kwargs: dict[str, Any] | None = None,
         axis: int | None = None,
         *args: Any,
-        init_io: bool = True,
-        sets_up: bool = True,
         setup_kwargs: dict[str, Any] | None = None,
         init: bool = True,
         **kwargs: Any,
@@ -77,8 +75,6 @@ class NNMFLineLengthStandardizer(BlockGroup):
                 non_negative=non_negative,
                 non_negative_kwargs=non_negative_kwargs,
                 axis=axis,
-                init_io=init_io,
-                sets_up=sets_up,
                 setup_kwargs=setup_kwargs,
                 **kwargs,
             )
@@ -100,8 +96,6 @@ class NNMFLineLengthStandardizer(BlockGroup):
         non_negative_kwargs: dict[str, Any] | None = None,
         axis: int | None = None,
         *args: Any,
-        init_io: bool = True,
-        sets_up: bool = True,
         setup_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
@@ -131,10 +125,10 @@ class NNMFLineLengthStandardizer(BlockGroup):
         )
 
         # Construct Parent #
-        super().construct(*args, init_io=init_io, sets_up=sets_up, setup_kwargs=setup_kwargs, **kwargs)
+        super().construct(*args, setup_kwargs=setup_kwargs, **kwargs)
 
-    # Operations
-    def create_operations(
+    # Blocks
+    def create_blocks(
         self,
         squared_estimator: bool | None = None,
         window_len: int | None = None,
@@ -151,15 +145,15 @@ class NNMFLineLengthStandardizer(BlockGroup):
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        # Create Operations
-        self.operations["line_length"] = LineLength(
+        # Create Blocks
+        self.blocks["line_length"] = LineLength(
             squared_estimator=squared_estimator,
             window_len=window_len,
             window_type=window_type,
             axis=axis,
         )
 
-        self.operations["shift_scale"] = RunningShiftScaler(
+        self.blocks["shift_scale"] = RunningShiftScaler(
             shift_rescale=shift_scale,
             forget_factor=forget_factor,
             mean=mean,
@@ -169,17 +163,17 @@ class NNMFLineLengthStandardizer(BlockGroup):
             axis=axis,
         )
 
-        self.operations["non_negative"] = NonNegative(
+        self.blocks["non_negative"] = NonNegative(
             non_negative=non_negative,
             non_negative_kwargs=non_negative_kwargs,
         )
 
     # IO
     def link_inner_io(self, *args: Any, **kwargs: Any) -> None:
-        # Get Operations
-        line_length = self.operations["line_length"]
-        shift_scaler = self.operations["shift_scale"]
-        non_negative_op = self.operations["non_negative"]
+        # Get Blocks
+        line_length = self.blocks["line_length"]
+        shift_scaler = self.blocks["shift_scale"]
+        non_negative_op = self.blocks["non_negative"]
 
         # Set Input
         self.inputs["data"] = line_length.inputs["data"]
@@ -213,7 +207,7 @@ class NNMFLineLengthStandardizer(BlockGroup):
         link_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
-        """A method for setting up the object before it runs operation."""
+        """A method for setting up the object before it runs block."""
         new_create_kwargs = dict(
             squared_estimator=squared_estimator,
             window_len=window_len,

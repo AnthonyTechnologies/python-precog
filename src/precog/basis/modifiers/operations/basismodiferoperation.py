@@ -15,16 +15,16 @@ __email__ = __email__
 from typing import ClassVar, Any
 
 # Third-Party Packages #
+from blockobjects import BaseBlock
 import numpy as np
 
 # Local Packages #
-from ....operations.operation import BaseOperation
 from ..basebasismodifier import BaseBasisModifier
 
 
 # Definitions #
 # Classes #
-class BasisModifierOperation(BaseOperation):
+class BasisModifierOperation(BaseBlock):
     default_input_names: ClassVar[tuple[str, ...]] = ("data", "bases")
     default_output_names: ClassVar[tuple[str, ...]] = ("m_data",)
     modifier_type: type[BaseBasisModifier] | None = None

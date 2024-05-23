@@ -13,19 +13,19 @@ __email__ = __email__
 
 # Imports #
 # Standard Libraries #
-from typing import Any
+from typing import ClassVar, Any
 
 # Third-Party Packages #
+from blockobjects import BaseBlock
 import numpy as np
 from proxyarrays import BaseProxyArray, BaseTimeAxis, BaseTimeSeries, TimeSeriesProxy
 
 # Local Packages #
-from .operation import BaseOperation
 
 
 # Definitions #
 # Classes #
-class TimeBuffer(BaseOperation):
+class TimeBuffer(BaseBlock):
     default_input_names: ClassVar[tuple[str, ...]] = ("data", )
     default_output_names: ClassVar[tuple[str, ...]] = ("buffer_data",)
 
