@@ -1,4 +1,4 @@
-""" basetraineroperation.py.py
+""" basetrainerblock.py.py
 
 """
 # Package Header #
@@ -28,7 +28,7 @@ from .basetrainer import BaseTrainer
 
 # Definitions #
 # Classes #
-class BaseTrainerOperation(BaseTrainer, BaseBlock):
+class BaseTrainerBlock(BaseTrainer, BaseBlock):
     # Attributes #
     default_input_names: ClassVar[tuple[str, ...]] = ("data",)
     default_output_names: ClassVar[tuple[str, ...]] = ("bases",)

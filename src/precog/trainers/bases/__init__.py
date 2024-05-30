@@ -14,4 +14,4 @@ __email__ = __email__
 # Imports #
 # Local Packages #
 from .basetrainer import BaseTrainer
-from .basetraineroperation import BaseTrainerOperation
+from .basetrainerblock import BaseTrainerBlock

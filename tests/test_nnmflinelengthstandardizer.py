@@ -15,11 +15,13 @@ __email__ = __email__
 
 # Imports #
 # Standard Libraries #
+from asyncio import run
 import datetime
 import pathlib
 import timeit
 
 # Third-Party Packages #
+from blockobjects.process import DEFAULT_PROCESS_CONTEXT
 import pytest
 import numpy as np
 
@@ -52,32 +54,51 @@ class ClassTest:
 
 class TestNNMFLineLengthStandardizer(ClassTest):
 
+    async def start_async(self, data, *args, **kwargs):
+        # Create Block Group
+        standardizer = NNMFLineLengthStandardizer(**kwargs)
+        # Start Block Group
+        await standardizer.start_async()
+
+        # Send Data
+        await standardizer.inputs.put_item_async("data", data)
+
+        # Get Output
+        outputs_1 = await standardizer.outputs.get_all_async()
+
+        # Stop Block
+        await standardizer.stop_async()
+
+        assert np.all(outputs_1["features"] >= 0)
+
     def test_random_execute(self):
+        DEFAULT_PROCESS_CONTEXT.select_context("multiprocessing")
+
+        # Create Test Data
         samples = 102400
         channels = 512
         t_data = np.random.normal(loc=7, scale=3, size=(samples, channels))
 
-        standardizer = NNMFLineLengthStandardizer(
+        run(self.start_async(
+            data=t_data,
             forget_factor=10**-6,
             mean=np.expand_dims(t_data[0, :], 0),
             threshold=1,
-        )
-        out = standardizer.evaluate(data=t_data)
-
-        assert np.all(out >= 0)
+        ))
 
     def test_random_execute_decay_mean(self):
+        DEFAULT_PROCESS_CONTEXT.select_context("multiprocessing")
+
+        # Create Test Data
         samples = 102400
         channels = 512
-        t_data = np.random.rand(samples, channels)
+        t_data = np.random.normal(loc=7, scale=3, size=(samples, channels))
 
-        standardizer = NNMFLineLengthStandardizer(
+        run(self.start_async(
+            data=t_data,
             forget_factor=10**-6,
             shift_scale="shift_decaying_mean",
-        )
-        out = standardizer.evaluate(data=t_data)
-
-        assert np.all(out >= 0)
+        ))
 
 
 # Main #

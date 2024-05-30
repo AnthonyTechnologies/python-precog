@@ -24,12 +24,12 @@ from blockobjects.io import DelegatingIOManager, BaseIO, IORouter
 from ..architectures.torch import BaseNNMFModule, NNMFDModule
 from ..basis import ModelBasis
 from ..basis.modifiers import AdaptiveMultiplicativeModifier
-from ..trainers.bases import BaseTrainerOperation
+from ..trainers.bases import BaseTrainerBlock
 
 
 # Definitions #
 # Classes #
-class EnsembleTrainer(BlockGroup, BaseTrainerOperation):
+class EnsembleTrainer(BlockGroup, BaseTrainerBlock):
     # Class Attributes #
     default_input_names: ClassVar[tuple[str, ...]] = ("data",)
     default_output_names:  ClassVar[tuple[str, ...]] = ("bases",)
@@ -38,7 +38,7 @@ class EnsembleTrainer(BlockGroup, BaseTrainerOperation):
     # Construction/Destruction
     def __init__(
         self,
-        subtrainers: dict[str, BaseTrainerOperation] | None = None,
+        subtrainers: dict[str, BaseTrainerBlock] | None = None,
         *args: Any,
         bases: dict[str, ModelBasis] | None = None,
         state_variables: dict[str, Any] | None = None,
@@ -75,7 +75,7 @@ class EnsembleTrainer(BlockGroup, BaseTrainerOperation):
     # Constructors/Destructors
     def construct(
         self,
-        subtrainers: dict[str, BaseTrainerOperation] | None = None,
+        subtrainers: dict[str, BaseTrainerBlock] | None = None,
         *args: Any,
         bases: dict[str, ModelBasis] | None = None,
         state_variables: dict[str, Any] | None = None,

@@ -56,10 +56,8 @@ class SpikeDetector(BlockGroup):
         time_buffer: BaseBlock | dict[str, Any] | None = None,
         detector: BaseBlock | dict[str, Any] | None = None,
         *args: Any,
-        blocks: Mapping[str, BaseBlock] | None = None,
-        init_io: bool = True,
-        sets_up: bool = True,
-        setup_kwargs: dict[str, Any] | None = None,
+        create_kwargs: dict[str, Any] | None = None,
+        link_kwargs: dict[str, Any] | None = None,
         init: bool = True,
         **kwargs: Any,
     ) -> None:
@@ -76,10 +74,8 @@ class SpikeDetector(BlockGroup):
                 standardizer=standardizer,
                 time_buffer=time_buffer,
                 detector=detector,
-                blocks=blocks,
-                init_io=init_io,
-                sets_up=sets_up,
-                setup_kwargs=setup_kwargs,
+                create_kwargs=create_kwargs,
+                link_kwargs=link_kwargs,
                 **kwargs,
             )
 
@@ -95,10 +91,8 @@ class SpikeDetector(BlockGroup):
         time_buffer: BaseBlock | dict[str, Any] | None = None,
         detector: BaseBlock | dict[str, Any] | None = None,
         *args: Any,
-        blocks: Mapping[str, BaseBlock] | None = None,
-        init_io: Any = True,
-        sets_up: bool = True,
-        setup_kwargs: dict[str, Any] | None = None,
+        create_kwargs: dict[str, Any] | None = None,
+        link_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         """Constructs this object.
@@ -116,7 +110,7 @@ class SpikeDetector(BlockGroup):
             self.model = model
         
         # Kwargs for Block Creation
-        create_kwargs = {}
+        create_kwargs = {} if create_kwargs is None else create_kwargs
         
         if isinstance(streamer, BaseBlock):
             self.blocks["streamer"] = streamer
@@ -148,19 +142,8 @@ class SpikeDetector(BlockGroup):
         elif isinstance(detector, dict):
             create_kwargs["detector_kwargs"] = detector
 
-        if setup_kwargs is None and create_kwargs:
-            setup_kwargs = {"create_kwargs": create_kwargs}
-        elif setup_kwargs is not None and (c_kwargs := setup_kwargs.get("create_kwargs")) is not None:
-            setup_kwargs["create_kwargs"] = setup_kwargs | c_kwargs
-
         # Construct Parent #
-        super().construct(
-            blocks=blocks,
-            init_io=init_io,
-            sets_up=sets_up,
-            setup_kwargs=setup_kwargs,
-            **kwargs,
-        )
+        super().construct(*args, create_kwargs=create_kwargs, link_kwargs=link_kwargs, **kwargs)
 
     # Blocks
     def create_detector(self, *args, **kwargs) -> BaseBlock:
@@ -175,15 +158,27 @@ class SpikeDetector(BlockGroup):
         time_buffer_kwargs: dict[str, Any] | None = None,
         detector_kwargs: dict[str, Any] | None = None,
         *args: Any,
+        override: bool = False,
         **kwargs: Any,
     ) -> None:
         # Create Blocks
-        self.blocks["streamer"] = self.streamer_type(**(streamer_kwargs or {}))
-        self.blocks["remapper"] = self.remapper_type(**(remapper_kwargs or {}))
-        self.blocks["preprocessing"] = self.preprocessing_type(**(preprocessing_kwargs or {}))
-        self.blocks["standardizer"] = self.standardizer_type(**(standardizer_kwargs or {}))
-        self.blocks["time_buffer"] = self.time_buffer_type(**(time_buffer_kwargs or {}))
-        self.blocks["detector"] = self.create_detector(**(detector_kwargs or {}))
+        if override or "streamer" not in self.blocks:
+            self.blocks["streamer"] = self.streamer_type(**(streamer_kwargs or {}))
+
+        if override or "remapper" not in self.blocks:
+            self.blocks["remapper"] = self.remapper_type(**(remapper_kwargs or {}))
+
+        if override or "preprocessing" not in self.blocks:
+            self.blocks["preprocessing"] = self.preprocessing_type(**(preprocessing_kwargs or {}))
+
+        if override or "standardizer" not in self.blocks:
+            self.blocks["standardizer"] = self.standardizer_type(**(standardizer_kwargs or {}))
+
+        if override or "time_buffer" not in self.blocks:
+            self.blocks["time_buffer"] = self.time_buffer_type(**(time_buffer_kwargs or {}))
+
+        if override or "detector" not in self.blocks:
+            self.blocks["detector"] = self.create_detector(**(detector_kwargs or {}))
 
     # IO
     def link_inner_io(self, *args: Any, **kwargs: Any) -> None:
@@ -196,44 +191,11 @@ class SpikeDetector(BlockGroup):
         detector = self.blocks["detector"]
 
         # Inner IO
-        streamer.outputs["data"] = remapper.inputs["data"]
-        remapper.outputs["remapped_data"] = preprocessing.inputs["data"]
-        preprocessing.outputs["filter_data"] = standardizer.inputs["data"]
-        standardizer.outputs["features"] = time_buffer.inputs["data"]
-        time_buffer.outputs["buffer_data"] = detector.inputs["data"]
+        streamer.outputs.link_forward("data", remapper.inputs, "data")
+        remapper.outputs.link_forward("remapped_data", preprocessing.inputs, "data")
+        preprocessing.outputs.link_forward("filter_data", standardizer.inputs, "data")
+        standardizer.outputs.link_forward("features", time_buffer.inputs, "data")
+        time_buffer.outputs.link_forward("buffer_data", detector.inputs, "data")
 
         # Set Output
         self.outputs = detector.outputs  # Make an indirect assignment
-
-    # Setup
-    def setup(
-        self,
-        model_kwargs: dict[str, Any] | None = None,
-        *args: Any,
-        create: bool = True,
-        create_kwargs: dict[str, Any] | None = None,
-        link: bool = True,
-        link_kwargs: dict[str, Any] | None = None,
-        **kwargs: Any,
-    ) -> None:
-        """Creates the inner blocks and links their IO.
-
-        Args:
-            *args: The arguments for setup.
-            create: Determines if the inner block will be created.
-            create_kwargs: The keyword arguments for creating the inner blocks.
-            link: Determines if the inner IO will be linked between blocks.
-            link_kwargs: The keyword arguments for creating linking the inner blocks' IO.
-            **kwargs: The keyword arguments for setup.4
-        """
-        if self.model is None:
-            self.model = self.model_type(**(model_kwargs or {}))
-
-        super().setup(
-            *args,
-            create=create,
-            create_kwargs=create_kwargs,
-            link=link,
-            link_kwargs=link_kwargs,
-            **kwargs,
-        )

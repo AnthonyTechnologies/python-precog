@@ -304,11 +304,4 @@ class RunningShiftScaler(BaseBlock):
         ss_data = self.shift_rescale(data)
 
         # Output
-        if ss_data is None:
-            return None
-        elif hasattr(data, "data"):
-            data_deep = data.dataless_proxy_leaf_copy()
-            data_deep.data = ss_data
-            return data_deep
-        else:
-            return ss_data
+        return ss_data

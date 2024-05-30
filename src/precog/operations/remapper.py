@@ -115,9 +115,4 @@ class Remapper(BaseBlock):
         remapped = np.moveaxis(np.moveaxis(data, self.axis, -1) @ self.map_matrix, -1, self.axis)
 
         # Output
-        if hasattr(data, "data"):
-            data_deep = data.dataless_proxy_leaf_copy()
-            data_deep.data = remapped
-            return data_deep
-        else:
-            return remapped
+        return remapped

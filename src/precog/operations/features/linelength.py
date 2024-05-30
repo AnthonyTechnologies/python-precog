@@ -125,9 +125,4 @@ class LineLength(BaseFeature):
             data_ll = np.sqrt(data_ll)
 
         # Output
-        if hasattr(data, "data"):
-            data_deep = data.dataless_proxy_leaf_copy()
-            data_deep.data = data_ll
-            return data_deep
-        else:
-            return data_ll
+        return data_ll

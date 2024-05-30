@@ -113,9 +113,4 @@ class NonNegative(BaseBlock):
         nn_data = self.non_negative(data, **self.non_negative_kwargs)
 
         # Output
-        if hasattr(data, "data"):
-            data_deep = data.dataless_proxy_leaf_copy()
-            data_deep.data = nn_data
-            return data_deep
-        else:
-            return nn_data
+        return nn_data

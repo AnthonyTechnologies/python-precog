@@ -25,12 +25,12 @@ from ...architectures.torch import BaseNNMFModule, NNMFDModule
 from ...basis import ModelBasis
 from ...basis.modifiers import AdaptiveMultiplicativeModifier
 from ...basis.modifiers.operations import AdaptiveMultiplicativeOperation
-from ..bases import BaseTrainerOperation
+from ..bases import BaseTrainerBlock
 
 
 # Definitions #
 # Classes #
-class NNMFSpikeTrainer(BlockGroup, BaseTrainerOperation):
+class NNMFSpikeTrainer(BlockGroup, BaseTrainerBlock):
     # Class Attributes #
     default_input_names: ClassVar[tuple[str, ...]] = ("data",)
     default_output_names:  ClassVar[tuple[str, ...]] = ("bases",)
@@ -87,7 +87,7 @@ class NNMFSpikeTrainer(BlockGroup, BaseTrainerOperation):
         *args: Any,
         bases: dict[str, ModelBasis] | None = None,
         state_variables: dict[str, Any] | None = None,
-        subtrainers: dict[str, BaseTrainerOperation] | None = None,
+        subtrainers: dict[str, BaseTrainerBlock] | None = None,
         create_defaults: bool = False,
         bases_kwargs: dict[str, dict[str, Any]] | None = None,
         subtrainers_kwargs: dict[str, dict[str, Any]] | None = None,
@@ -138,7 +138,7 @@ class NNMFSpikeTrainer(BlockGroup, BaseTrainerOperation):
         *args: Any,
         bases: dict[str, ModelBasis] | None = None,
         state_variables: dict[str, Any] | None = None,
-        subtrainers: dict[str, BaseTrainerOperation] | None = None,
+        subtrainers: dict[str, BaseTrainerBlock] | None = None,
         create_defaults: bool = False,
         bases_kwargs: dict[str, dict[str, Any]] | None = None,
         subtrainers_kwargs: dict[str, dict[str, Any]] | None = None,
