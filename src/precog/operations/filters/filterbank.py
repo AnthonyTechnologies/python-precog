@@ -20,6 +20,7 @@ from typing import ClassVar, Any
 # Third-Party Packages #
 from blockobjects import BaseBlock
 import numpy as np
+from proxyarrays import BaseProxyArray
 from scipy.signal import filtfilt
 
 # Local Packages #
@@ -136,7 +137,7 @@ class FilterBank(BaseBlock):
             self.create_filters()
 
     # Evaluate
-    def evaluate(self, data: np.ndarray, *args, **kwargs: Any) -> Any:
+    def evaluate(self, data: np.ndarray | BaseProxyArray, *args, **kwargs: Any) -> Any:
         """An abstract method which is the evaluation of this object.
 
         Args:
@@ -148,7 +149,7 @@ class FilterBank(BaseBlock):
             The result of the evaluation.
         """
         # Input
-        data_deep = data.dataless_proxy_leaf_copy() if hasattr(data, "data") else None
+        data_deep = data.dataless_proxy_leaf_copy() if isinstance(data, BaseProxyArray) else None
 
         # Filtering
         for filter_ in self.filters:

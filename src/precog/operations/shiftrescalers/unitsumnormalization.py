@@ -18,6 +18,7 @@ from typing import ClassVar, Any
 # Third-Party Packages #
 from blockobjects import BaseBlock
 import numpy as np
+from proxyarrays import BaseProxyArray
 
 # Local Packages #
 
@@ -88,7 +89,7 @@ class UnitSumNormalization(BaseBlock):
         pass
 
     # Evaluate
-    def evaluate(self, data: np.ndarray, *args, **kwargs: Any) -> Any:
+    def evaluate(self, data: np.ndarray | BaseProxyArray, *args, **kwargs: Any) -> Any:
         """An abstract method which is the evaluation of this object.
 
         Args:
@@ -98,4 +99,12 @@ class UnitSumNormalization(BaseBlock):
         Returns:
             The result of the evaluation.
         """
-        return data / data.sum(axis=self.axis, keepdims=self.keep_dims)
+        n_data = data / data.sum(axis=self.axis, keepdims=self.keep_dims)
+
+        # Output
+        if isinstance(data, BaseProxyArray):
+            data_deep = data.dataless_proxy_leaf_copy()
+            data_deep.data = n_data
+            return data_deep
+        else:
+            return n_data

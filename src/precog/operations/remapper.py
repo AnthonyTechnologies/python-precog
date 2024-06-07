@@ -19,6 +19,7 @@ from typing import ClassVar, Any
 # Third-Party Packages #
 from blockobjects import BaseBlock
 import numpy as np
+from proxyarrays import BaseProxyArray
 
 # Local Packages #
 
@@ -95,7 +96,13 @@ class Remapper(BaseBlock):
             self.map_matrix = map_matrix
 
     # Evaluate
-    def evaluate(self, data: np.ndarray, map_matrix: np.ndarray | None = None, *args, **kwargs: Any) -> Any:
+    def evaluate(
+        self,
+        data: np.ndarray | BaseProxyArray,
+        map_matrix: np.ndarray | None = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any:
         """An abstract method which is the evaluation of this object.
 
         Args:
@@ -115,4 +122,9 @@ class Remapper(BaseBlock):
         remapped = np.moveaxis(np.moveaxis(data, self.axis, -1) @ self.map_matrix, -1, self.axis)
 
         # Output
-        return remapped
+        if isinstance(data, BaseProxyArray):
+            data_deep = data.dataless_proxy_leaf_copy()
+            data_deep.data = remapped
+            return data_deep
+        else:
+            return remapped

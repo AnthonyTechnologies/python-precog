@@ -35,7 +35,11 @@ class ProxyArrayStreamer(BaseBlock):
     default_output_names: ClassVar[tuple[str, ...]] = ("data",)
     default_create_generator: str = "create_islices"
 
+    init_setup: ClassVar[bool] = False
+
     # Attributes #
+    will_produce = True
+
     proxy_array: BaseProxyArray | None = None
     empty_signal: Any = None
 
@@ -48,9 +52,6 @@ class ProxyArrayStreamer(BaseBlock):
         proxy_array: BaseProxyArray | None = None,
         empty_signal: Any = None,
         *args: Any,
-        init_io: bool = True,
-        sets_up: bool = False,
-        setup_kwargs: dict[str, Any] | None = None,
         init: bool = True,
         **kwargs: Any,
     ) -> None:
@@ -69,9 +70,6 @@ class ProxyArrayStreamer(BaseBlock):
                 proxy_array=proxy_array,
                 empty_signal=empty_signal,
                 *args,
-                init_io=init_io,
-                sets_up=sets_up,
-                setup_kwargs=setup_kwargs,
                 **kwargs,
             )
 
@@ -82,9 +80,6 @@ class ProxyArrayStreamer(BaseBlock):
         proxy_array: BaseProxyArray | None = None,
         empty_signal: Any = None,
         *args: Any,
-        init_io: bool = True,
-        sets_up: bool = True,
-        setup_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         """Constructs this object.
@@ -103,7 +98,7 @@ class ProxyArrayStreamer(BaseBlock):
             self.empty_signal = empty_signal
 
         # Construct Parent #
-        super().construct(*args, init_io=init_io, sets_up=sets_up, setup_kwargs=setup_kwargs, **kwargs)
+        super().construct(*args, **kwargs)
 
     # Create Generator
     def create_islices(
@@ -188,4 +183,3 @@ class ProxyArrayStreamer(BaseBlock):
             return next(self.generator)
         except StopIteration:
             return self.empty_signal
-

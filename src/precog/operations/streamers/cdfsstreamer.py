@@ -27,6 +27,8 @@ from .proxyarraystreamer import ProxyArrayStreamer
 class CDFSStreamer(ProxyArrayStreamer):
     default_create_generator: str = "create_islice_time"
 
+    cdfs: CDFS | None = None
+
     # Magic Methods #
     # Construction/Destruction
     def __init__(
@@ -34,14 +36,10 @@ class CDFSStreamer(ProxyArrayStreamer):
         cdfs: CDFS | None = None,
         empty_signal: Any = None,
         *args: Any,
-        init_io: bool = True,
-        sets_up: bool = False,
-        setup_kwargs: dict[str, Any] | None = None,
         init: bool = True,
         **kwargs: Any,
     ) -> None:
         # New Attributes #
-        self.cdfs: CDFS | None = None
 
         # Parent Attributes #
         super().__init__(*args, init=False, **kwargs)
@@ -52,9 +50,6 @@ class CDFSStreamer(ProxyArrayStreamer):
                 cdfs=cdfs,
                 empty_signal=empty_signal,
                 *args,
-                init_io=init_io,
-                sets_up=sets_up,
-                setup_kwargs=setup_kwargs,
                 **kwargs,
             )
 
@@ -65,18 +60,12 @@ class CDFSStreamer(ProxyArrayStreamer):
         cdfs: CDFS | None = None,
         empty_signal: Any = None,
         *args: Any,
-        init_io: bool = True,
-        sets_up: bool = True,
-        setup_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         """Constructs this object.
 
         Args:
             *args: Arguments for inheritance.
-            init_io: Determines if construct_io run during this construction.
-            sets_up: Determines if setup will run during this construction.
-            setup_kwargs: The keyword arguments for the setup method.
             **kwargs: Keyword arguments for inheritance.
         """
         proxy_array = None
@@ -92,9 +81,6 @@ class CDFSStreamer(ProxyArrayStreamer):
                 proxy_array=proxy_array,
                 empty_signal=empty_signal,
                 *args,
-                init_io=init_io,
-                sets_up=sets_up,
-                setup_kwargs=setup_kwargs,
                 **kwargs,
             )
 

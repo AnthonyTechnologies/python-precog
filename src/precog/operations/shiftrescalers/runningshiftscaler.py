@@ -21,6 +21,7 @@ from typing import ClassVar, Any
 from baseobjects.functions import MethodMultiplexer
 from blockobjects import BaseBlock
 import numpy as np
+from proxyarrays import BaseProxyArray
 
 # Local Packages #
 
@@ -280,7 +281,7 @@ class RunningShiftScaler(BaseBlock):
         return None if self.is_burning_in() else scaled_data
 
     # Evaluate
-    def evaluate(self, data: np.ndarray | None = None, *args, **kwargs: Any) -> Any:
+    def evaluate(self, data: np.ndarray | BaseProxyArray, *args, **kwargs: Any) -> Any:
         """An abstract method which is the evaluation of this object.
 
         Args:
@@ -304,4 +305,10 @@ class RunningShiftScaler(BaseBlock):
         ss_data = self.shift_rescale(data)
 
         # Output
-        return ss_data
+        # Output
+        if isinstance(data, BaseProxyArray):
+            data_deep = data.dataless_proxy_leaf_copy()
+            data_deep.data = ss_data
+            return data_deep
+        else:
+            return ss_data

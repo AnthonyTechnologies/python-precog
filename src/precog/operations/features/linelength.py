@@ -20,8 +20,8 @@ from typing import ClassVar, Any, Callable
 # Third-Party Packages #
 import numpy as np
 from blockobjects import BaseBlock
-from scipy.signal import convolve
-from scipy.signal import hann
+from proxyarrays import BaseProxyArray
+from scipy.signal import convolve, hann
 
 # Local Packages #
 from .basefeature import BaseFeature
@@ -98,7 +98,7 @@ class LineLength(BaseFeature):
         super().construct(*args, **kwargs)
 
     # Evaluate
-    def evaluate(self, data: np.ndarray, *args, **kwargs: Any) -> Any:
+    def evaluate(self, data: np.ndarray | BaseProxyArray, *args, **kwargs: Any) -> Any:
         """An abstract method which is the evaluation of this object.
 
         Args:
@@ -125,4 +125,9 @@ class LineLength(BaseFeature):
             data_ll = np.sqrt(data_ll)
 
         # Output
-        return data_ll
+        if isinstance(data, BaseProxyArray):
+            data_deep = data.dataless_proxy_leaf_copy()
+            data_deep.data = data_ll
+            return data_deep
+        else:
+            return data_ll

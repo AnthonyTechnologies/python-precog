@@ -18,6 +18,7 @@ from typing import ClassVar, Any
 # Third-Party Packages #
 from blockobjects import BaseBlock
 import numpy as np
+from proxyarrays import BaseProxyArray
 from scipy.signal import iirnotch, filtfilt
 
 # Local Packages #
@@ -186,6 +187,16 @@ class NotchFilter(BaseBlock):
         Returns:
             The result of the evaluation.
         """
+        # Input
+        data_deep = data.dataless_proxy_leaf_copy() if isinstance(data, BaseProxyArray) else None
+
+        # Filtering
         for filter_ in self.filters:
             data = filtfilt(filter_[0], filter_[1], data, axis=self.axis)
-        return data
+
+        # Output
+        if data_deep is None:
+            return data
+        else:
+            data_deep.data = data
+            return data_deep

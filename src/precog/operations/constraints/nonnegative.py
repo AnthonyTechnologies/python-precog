@@ -21,6 +21,7 @@ from typing import ClassVar, Any
 from baseobjects.functions import CallableMultiplexObject, MethodMultiplexer
 from blockobjects import BaseBlock
 import numpy as np
+from proxyarrays import BaseProxyArray
 
 # Local Packages #
 
@@ -113,4 +114,9 @@ class NonNegative(BaseBlock):
         nn_data = self.non_negative(data, **self.non_negative_kwargs)
 
         # Output
-        return nn_data
+        if isinstance(data, BaseProxyArray):
+            data_deep = data.dataless_proxy_leaf_copy()
+            data_deep.data = nn_data
+            return data_deep
+        else:
+            return nn_data

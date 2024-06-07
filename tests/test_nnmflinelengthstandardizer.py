@@ -69,7 +69,7 @@ class TestNNMFLineLengthStandardizer(ClassTest):
         # Stop Block
         await standardizer.stop_async()
 
-        assert np.all(outputs_1["features"] >= 0)
+        assert np.all(outputs_1["features"][1] >= 0)
 
     def test_random_execute(self):
         DEFAULT_PROCESS_CONTEXT.select_context("multiprocessing")

@@ -19,6 +19,7 @@ from typing import ClassVar, Any
 from baseobjects import MethodMultiplexer
 from blockobjects import BaseBlock
 import numpy as np
+from proxyarrays import BaseProxyArray
 
 # Local Packages #
 
@@ -116,7 +117,7 @@ class Recenter(BaseBlock):
         return np.pad(data, width, mode="reflect")[tuple(slices)]
 
     # Evaluate
-    def evaluate(self, data: np.ndarray, *args, **kwargs: Any) -> Any:
+    def evaluate(self, data: np.ndarray | BaseProxyArray, *args, **kwargs: Any) -> Any:
         """An abstract method which is the evaluation of this object.
 
         Args:
@@ -126,4 +127,12 @@ class Recenter(BaseBlock):
         Returns:
             The result of the evaluation.
         """
-        return self.recenter(data)
+        r_data = self.recenter(data)
+
+        # Output
+        if isinstance(data, BaseProxyArray):
+            data_deep = data.dataless_proxy_leaf_copy()
+            data_deep.data = r_data
+            return data_deep
+        else:
+            return r_data
