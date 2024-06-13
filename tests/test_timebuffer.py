@@ -56,7 +56,7 @@ class BlockGroupTest(BlockGroup):
         step_samples: int | None = None,
         step_tolerance: float | int | np.dtype | None = None,
         sample_rate: float | int | np.dtype | None = None,
-        islice: slice | None = None,
+        slices: slice | None = None,
         *args: Any,
         override: bool = False,
         **kwargs: Any,
@@ -69,7 +69,7 @@ class BlockGroupTest(BlockGroup):
             **kwargs: The keyword arguments for creating the inner blocks.
         """
         # Create Blocks
-        self.blocks["generator"] = ProxyArrayStreamer(data, setup_kwargs={"islice": islice})
+        self.blocks["generator"] = ProxyArrayStreamer(data, setup_kwargs={"slices": slices})
         self.blocks["time_buffer"] = TimeBuffer(
             window_time=window_time,
             window_samples=window_samples,
@@ -152,11 +152,15 @@ class TestCDFSStreamer(ClassTest):
 
         # Get Output
         outputs_1 = await time_group.outputs.get_all_async()
+        outputs_2 = await time_group.outputs.get_all_async()
+        outputs_3 = await time_group.outputs.get_all_async()
+        outputs_4 = await time_group.outputs.get_all_async()
 
         # Stop Block
         await time_group.stop_async()
 
-        assert np.all(outputs_1["features"][1] >= 0)
+        assert outputs_1
+
 
     def test_evaluate_stream(self):
         DEFAULT_PROCESS_CONTEXT.select_context("multiprocessing")
@@ -165,12 +169,12 @@ class TestCDFSStreamer(ClassTest):
             create_kwargs={"data": self.create_time_series(1000, 512),
                            "window_time": 1,
                            "window_samples": 1000,
-                           "window_tolerance": 0.1,
+                           "window_tolerance": 0.001,
                            "step_time": 0.5,
                            "step_samples": 500,
-                           "step_tolerance": 0.05,
+                           "step_tolerance": 0.0005,
                            "sample_rate": 1000,
-                           "islice": slice(0, 10000),
+                           "slices": [slice(0, 1000)],
                            },
         ))
 

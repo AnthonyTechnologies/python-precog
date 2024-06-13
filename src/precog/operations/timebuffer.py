@@ -34,6 +34,8 @@ from proxyarrays import BaseProxyArray, BaseTimeAxis, BaseTimeSeries, TimeSeries
 class TimeBuffer(BaseBlock):
     # Class Attributes #
     default_input_names: ClassVar[tuple[str, ...]] = ("data", "time_axis")
+    default_required_input: ClassVar[tuple[str, ...] | None] = ()
+    default_optional_input: ClassVar[dict[str, Any]] = {"data": None, "time_axis": None}
     default_output_names: ClassVar[tuple[str, ...]] = ("buffer_data",)
 
     # Attributes #
@@ -323,48 +325,52 @@ class TimeBuffer(BaseBlock):
     # Synchronization Buffer
     def insert_into_buffer(self, items: Iterable[BaseTimeSeries, ...]) -> None:
         for item in items:
-            if item.start_nanostamp > self.buffer.end_nanostamp:
+            if self.buffer.end_nanostamp is None or item.start_nanostamp > self.buffer.end_nanostamp:
                 self.buffer.append(item)
             else:
                 index = int(np.searchsorted(self.buffer.get_start_nanostamps(), item.start_nanostamp))
                 self.buffer.proxies.insert(index, item)
 
     def dispense_data(self) -> BaseTimeSeries | None:
-        if self.current_start is None:
-            self.current_start = self.buffer.time_axis[0]
+        if self.current_start_ns is None:
+            self.current_start_ns = self.buffer.start_nanostamp
 
         n_samples = self.buffer.get_length()
-        start_index = self.buffer.find_time_index(self.current_start, tails=True)
+        start_index = self.buffer.find_time_index(self.current_start_ns, tails=True)[0]
 
         data = deque()
         while n_samples - start_index >= self.window_samples:
             # Validate Window
-            start_nanostamp = self.buffer.get_nanonstamp[start_index]
+            start_nanostamp = self.buffer.get_nanostamp(start_index)
             end_index = start_index + self.window_samples
-            nanostamps = self.buffer.time_axis[start_index, end_index]
-            if abs(nanostamps[-1] + self.sample_period - nanostamps[0] - self.window_time) <= self.window_tolerance:
+            nanostamps = self.buffer.nanostamp_slice(start_index, end_index)
+            t_diff = abs(nanostamps[-1] + self.sample_period_ns - nanostamps[0] - self.window_time_ns)
+            if t_diff <= self.window_tolerance_ns:
                 slices = [slice(None)] * self.buffer.ndim
                 slices[self.axis] = slice(start_index, start_index + self.window_samples)
-                data.append(self.buffer.slices_proxy(slices))
+                data.append(self.buffer.return_proxy_leaf(
+                    data=self.buffer.slices_array(slices),
+                    time_axis=self.buffer.nanostamp_slice(start_index, start_index + self.window_samples),
+                ))
             elif self.allow_window_drift:
                 start_index += 1
                 continue
 
             # Check if there is enough data to step
             next_index = start_index + self.step_samples
-            if n_samples < next_index:
-                start_nanostamp = self.buffer.get_nanonstamp[start_index] + self.step_time
+            if n_samples < next_index + self.window_samples:
+                start_nanostamp = self.buffer.get_nanostamp(start_index) + self.step_time_ns
                 break
 
             # Validate Step
-            step_nanostamp = self.buffer.get_nanonstamp[next_index] - start_nanostamp
-            if step_nanostamp > self.step_tolerance or abs(step_nanostamp % self.step_time) > self.step_tolerance:
-                next_index = self.buffer.find_time_index(start_nanostamp + self.step_time, True)
+            step_nanostamp = self.buffer.get_nanostamp(next_index) - start_nanostamp
+            if step_nanostamp < self.step_tolerance_ns or abs(step_nanostamp % self.step_time_ns) > self.step_tolerance_ns:
+                next_index = self.buffer.find_time_index(start_nanostamp + self.step_time, True)[0]
                 if next_index == start_index:
                     next_index += 1
             start_index = next_index
 
-        self.current_start = start_nanostamp
+        self.current_start_ns = start_nanostamp
         for i in range(len(self.buffer.proxies)):
             if self.buffer.proxies[0].end_nanostamp < start_nanostamp:
                 self.buffer.proxies.pop(0)
