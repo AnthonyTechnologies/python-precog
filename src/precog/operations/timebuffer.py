@@ -239,11 +239,6 @@ class TimeBuffer(BaseBlock):
                 new_outputs.append({k: IdentifiedItem(ids, v) for k, v in zip(keys, [out[i] for out in outputs])})
             return new_outputs
 
-    # Setup
-    def setup(self, *args: Any, **kwargs: Any) -> None:
-        """A method for setting up the object before it runs operation."""
-        pass
-
     # Evaluate
     def evaluate(
         self,
@@ -333,7 +328,7 @@ class TimeBuffer(BaseBlock):
 
     def dispense_data(self) -> BaseTimeSeries | None:
         if self.current_start_ns is None:
-            self.current_start_ns = self.buffer.start_nanostamp
+            self.current_start_ns = start_nanostamp = self.buffer.start_nanostamp
 
         n_samples = self.buffer.get_length()
         start_index = self.buffer.find_time_index(self.current_start_ns, tails=True)[0]
@@ -344,7 +339,7 @@ class TimeBuffer(BaseBlock):
             start_nanostamp = self.buffer.get_nanostamp(start_index)
             end_index = start_index + self.window_samples
             nanostamps = self.buffer.nanostamp_slice(start_index, end_index)
-            t_diff = abs(nanostamps[-1] + self.sample_period_ns - nanostamps[0] - self.window_time_ns)
+            t_diff = abs(int(nanostamps[-1] - nanostamps[0] + self.sample_period_ns) - int(self.window_time_ns))
             if t_diff <= self.window_tolerance_ns:
                 slices = [slice(None)] * self.buffer.ndim
                 slices[self.axis] = slice(start_index, start_index + self.window_samples)
@@ -377,5 +372,5 @@ class TimeBuffer(BaseBlock):
             else:
                 break
 
-        return data
+        return data if data else None
 

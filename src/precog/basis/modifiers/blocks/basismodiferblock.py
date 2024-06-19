@@ -1,4 +1,4 @@
-""" basismodifieroperation.py.py
+""" basismodifierblock.py
 
 """
 # Package Header #
@@ -24,12 +24,15 @@ from ..basebasismodifier import BaseBasisModifier
 
 # Definitions #
 # Classes #
-class BasisModifierOperation(BaseBlock):
+class BasisModifierBlock(BaseBlock):
+    # Class Attributes #
     default_input_names: ClassVar[tuple[str, ...]] = ("data", "bases")
+    default_required_input: ClassVar[tuple[str, ...]] = ("data",)
+    default_optional_input: ClassVar[dict[str, Any]] = {"bases": None}
     default_output_names: ClassVar[tuple[str, ...]] = ("m_data",)
-    modifier_type: type[BaseBasisModifier] | None = None
 
-    # New Attributes #
+    # Attributes #
+    modifier_type: type[BaseBasisModifier] | None = None
     modifier: BaseBasisModifier | None = None
 
     # Properties #
@@ -55,9 +58,6 @@ class BasisModifierOperation(BaseBlock):
         self,
         modifier: BaseBasisModifier | None = None,
         *args: Any,
-        init_io: bool = True,
-        sets_up: bool = True,
-        setup_kwargs: dict[str, Any] | None = None,
         init: bool = True,
         **kwargs: Any,
     ) -> None:
@@ -69,9 +69,6 @@ class BasisModifierOperation(BaseBlock):
             self.construct(
                 modifier=modifier,
                 *args,
-                init_io=init_io,
-                sets_up=sets_up,
-                setup_kwargs=setup_kwargs,
                 **kwargs,
             )
 
@@ -81,9 +78,6 @@ class BasisModifierOperation(BaseBlock):
         self,
         modifier: BaseBasisModifier | None = None,
         *args: Any,
-        init_io: bool = True,
-        sets_up: bool = True,
-        setup_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         """Constructs this object.
@@ -99,7 +93,7 @@ class BasisModifierOperation(BaseBlock):
             self.modifier = modifier
 
         # Construct Parent #
-        super().construct(*args, init_io=init_io, sets_up=sets_up, setup_kwargs=setup_kwargs, **kwargs)
+        super().construct(*args, **kwargs)
 
     # Setup
     def setup(self, modifier_kwargs: dict[str, Any] = None, *args: Any, **kwargs: Any) -> None:

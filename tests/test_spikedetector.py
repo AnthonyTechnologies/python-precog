@@ -15,6 +15,7 @@ __email__ = __email__
 
 # Imports #
 # Standard Libraries #
+from asyncio import run, sleep
 import datetime
 import pathlib
 import timeit
@@ -22,10 +23,12 @@ import timeit
 # Third-Party Packages #
 import pytest
 import numpy as np
+from proxyarrays import TimeSeriesProxy, BlankTimeAxis, ContainerTimeAxis, ContainerTimeSeries
 import torch
 from ucsfbids import Subject
 
 # Local Packages #
+from src.precog.operations import ProxyArrayStreamer
 from src.precog.models import EnsembleModel
 from src.precog.models.torch import NNMFDTorchModel
 from src.precog.basis.torch import NonNegativeBasis
@@ -144,6 +147,107 @@ class TestSpikeDetector(ClassTest):
         bases = detector.model.get_bases()
         state_variables = detector.model.get_state_variables()
         assert detector is not None
+
+    def create_time_series(self, sample_rate, channels):
+        time_series = TimeSeriesProxy()
+        generator = BlankTimeAxis(start=0, sample_rate=sample_rate, shape=(600000,), precise=True)
+        segments = (
+            (0, int(sample_rate * 100)),
+            (0, int(sample_rate * 10)),
+            (0, int(sample_rate * 0.5)),
+            (0, int(sample_rate * 0.5)),
+            (0, int(sample_rate * 100)),
+            (100, int(sample_rate * 100)),
+            (0, int(sample_rate * 100)),
+            (0, int(sample_rate * 100.5)),
+            (0, int(sample_rate * 100)),
+        )
+        end = 0
+
+        for gap, length in segments:
+            start = end + gap
+            end = start + length
+            times = generator[start:end]
+            time_axis = ContainerTimeAxis(data=times, sample_rate=sample_rate, precise=True)
+            data = np.random.rand(len(times), channels) - 0.5
+            time_series.proxies.append(ContainerTimeSeries(data=data, time_axis=time_axis))
+
+        return time_series
+
+    def create_proxy_streamer(self, sample_rate, channels, slices):
+        data = self.create_time_series(sample_rate, channels)
+        return ProxyArrayStreamer(data, setup_kwargs={"slices": slices})
+
+    async def start_async(self, spike_detector, *args, **kwargs):
+        # Start Block Group
+        await spike_detector.start_async()
+
+        # Get Output
+        await sleep(120)
+
+        # Stop Block
+        await spike_detector.stop_async()
+
+    def test_proxy_streamer(self):
+        # Create Data Streamer
+        sample_rate = 1024.0
+        channels = 512
+        streamer = self.create_proxy_streamer(sample_rate, 512, [slice(0, int(sample_rate))])
+        new_map = np.identity(channels)
+
+        # Create Tensor Info
+        window_size = int(sample_rate * 0.250)
+        n_motifs = 10
+        w_size = (channels, n_motifs, window_size)
+        h_size = (1, n_motifs, int(sample_rate * 10) - window_size + 1)
+
+        # Create Models
+        submodels = {}
+
+        submodels["first_model"] = NNMFDTorchModel(
+            architecture={"W": NonNegativeBasis(size=w_size), "H": NonNegativeBasis(size=h_size)},
+            trainer={"state_variables": {
+                "w_modifier": {
+                    "theta": 3600,
+                    "beta": 1.0,
+                    "penalty": 1.0,
+                    "pos": torch.zeros(size=w_size),
+                    "neg": torch.zeros(size=w_size),
+                },
+                "h_modifier": {
+                    "theta": 0,
+                    "beta": 1.0,
+                    "penalty": 1.0,  # Todo: Add this later
+                    "pos": torch.zeros(size=h_size),  # torch.zeros_like(theta, memory_format=torch.preserve_format)
+                    "neg": torch.zeros(size=h_size),
+                },
+            }},
+        )
+
+        model = EnsembleModel(submodels=submodels)
+
+        # Create Pipeline
+        spike_detector = SpikeDetector(
+            model=model,
+            streamer=streamer,
+            remapper={"map_matrix": new_map},
+            preprocessing={"sample_rate": sample_rate},
+            standardizer={"forget_factor": 10**-6, "burn_in": 10},  # Todo: Handle burn in (automatic)
+            time_buffer={
+                "window_time": 10,
+                "window_samples": int(sample_rate * 10),
+                "window_tolerance": 0.0005,
+                "step_time": 0.250,
+                "step_samples": int(sample_rate * 0.250),
+                "step_tolerance": 0.0005,
+                "sample_rate": sample_rate,
+            },
+        )
+
+        # Evaluate
+        run(self.start_async(spike_detector))
+
+        assert True
 
     def test_evaluate_stream(self):
         # Import Package

@@ -23,7 +23,7 @@ from ....operations import BaseOperation, OperationGroup
 from ....operations.operation.io import IOManager
 from ....basis import ModelBasis
 from ....basis.modifiers import AdaptiveMultiplicativeModifier
-from ....basis.modifiers.operations import AdaptiveMultiplicativeOperation
+from ....basis.modifiers.blocks import AdaptiveMultiplicativeBlock
 from .basisrefiner import BasisRefiner
 
 

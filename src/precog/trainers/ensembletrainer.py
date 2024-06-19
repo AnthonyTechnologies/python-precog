@@ -34,6 +34,9 @@ class EnsembleTrainer(BlockGroup, BaseTrainerBlock):
     default_input_names: ClassVar[tuple[str, ...]] = ("data",)
     default_output_names:  ClassVar[tuple[str, ...]] = ("bases",)
 
+    init_blocks = False
+    init_io_links = False
+
     # Magic Methods #
     # Construction/Destruction
     def __init__(
@@ -45,10 +48,7 @@ class EnsembleTrainer(BlockGroup, BaseTrainerBlock):
         create_defaults: bool = False,
         bases_kwargs: dict[str, dict[str, Any]] | None = None,
         subtrainers_kwargs: dict[str, dict[str, Any]] | None = None,
-        operations: Mapping[str, BaseBlock] | None = None,
-        init_io: bool = True,
-        sets_up: bool = True,
-        setup_kwargs: bool = None,
+        blocks: Mapping[str, BaseBlock] | None = None,
         init: bool = True,
         **kwargs: Any,
     ) -> None:
@@ -64,10 +64,7 @@ class EnsembleTrainer(BlockGroup, BaseTrainerBlock):
                 create_defaults=create_defaults,
                 bases_kwargs=bases_kwargs,
                 subtrainers_kwargs=subtrainers_kwargs,
-                operations=operations,
-                init_io=init_io,
-                sets_up=sets_up,
-                setup_kwargs=setup_kwargs,
+                blocks=blocks,
                 **kwargs,
             )
 
@@ -82,10 +79,7 @@ class EnsembleTrainer(BlockGroup, BaseTrainerBlock):
         create_defaults: bool = False,
         bases_kwargs: dict[str, dict[str, Any]] | None = None,
         subtrainers_kwargs: dict[str, dict[str, Any]] | None = None,
-        operations: Mapping[str, BaseBlock] | None = None,
-        init_io: bool = True,
-        sets_up: bool = True,
-        setup_kwargs: bool = None,
+        blocks: Mapping[str, BaseBlock] | None = None,
         **kwargs: Any,
     ) -> None:
         # Construct Parents #
@@ -96,15 +90,12 @@ class EnsembleTrainer(BlockGroup, BaseTrainerBlock):
             create_defaults=create_defaults,
             bases_kwargs=bases_kwargs,
             subtrainers_kwargs=subtrainers_kwargs,
-            operations=operations,
-            init_io=init_io,
-            sets_up=sets_up,
-            setup_kwargs=setup_kwargs,
+            blocks=blocks,
             **kwargs,
         )
 
-    # Operations
-    def create_operations(self, *args: Any, override: bool = False, **kwargs: Any) -> None:
+    # Blocks
+    def create_blocks(self, *args: Any, override: bool = False, **kwargs: Any) -> None:
         """Creates the inner blocks.
 
         Args:
@@ -113,20 +104,21 @@ class EnsembleTrainer(BlockGroup, BaseTrainerBlock):
             **kwargs: The keyword arguments for creating the inner blocks.
         """
         for name, trainer in self.subtrainers.items():
-            if name not in self.operations or override:
-                self.operations[name] = trainer
+            if name not in self.blocks or override:
+                self.blocks[name] = trainer
 
     # IO
+    def create_inner_io(self, *args: Any, **kwargs: Any) -> None:
+        # Input
+        self.inputs["data"] = IORouter(names=self.blocks.keys())
+
+        # Output
+        self.outputs["bases"] = DelegatingIOManager(names=self.blocks.keys())
+
     def link_inner_io(self, *args: Any, **kwargs: Any) -> None:
-        # Get IO of Each Operation
-        input_data = {}
-        output_bases = {}
-        for name, operation in self.operations.items():
-            input_data[name] = operation.inputs["data"]
-            output_bases[name] = operation.outputs["bases"]
+        for name, block in self.blocks.items():
+            # Set Input
+            self.inputs["data"].link_forward(name, block.inputs, "data")
 
-        # Set Input
-        self.inputs["data"] = IORouter(io_=input_data)
-
-        # Set Output
-        self.outputs["bases"] = IORouter(io_=output_bases)
+            # Set Output
+            block.outputs.link_forward("bases", self.outputs["bases"], name)

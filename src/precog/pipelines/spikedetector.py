@@ -21,7 +21,7 @@ from blockobjects import BaseBlock, BlockGroup
 import numpy as np
 
 # Local Packages #
-from ..operations.streamers import CDFSStreamer
+from ..operations.streamers import ProxyArrayStreamer
 from ..operations.remapper import Remapper
 from ..operations.preprocessingfilterbank import PreprocessingFilterBank
 from ..operations.standardizers import NNMFLineLengthStandardizer
@@ -34,7 +34,7 @@ from ..models.torch import NNMFDTorchModel
 # Classes #
 class SpikeDetector(BlockGroup):
     # Attributes #
-    streamer_type = CDFSStreamer
+    streamer_type = ProxyArrayStreamer
     remapper_type = Remapper
     preprocessing_type = PreprocessingFilterBank
     standardizer_type = NNMFLineLengthStandardizer

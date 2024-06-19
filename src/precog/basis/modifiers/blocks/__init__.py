@@ -13,5 +13,5 @@ __email__ = __email__
 
 # Imports #
 # Local Packages #
-from .basismodiferoperation import BasisModifierOperation
-from .adaptivemultiplicativeoperation import AdaptiveMultiplicativeOperation
+from .basismodiferblock import BasisModifierBlock
+from .adaptivemultiplicativeblock import AdaptiveMultiplicativeBlock

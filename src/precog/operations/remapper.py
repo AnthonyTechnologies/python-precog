@@ -30,6 +30,7 @@ class Remapper(BaseBlock):
     # Class Attributes #
     default_input_names: ClassVar[tuple[str, ...]] = ("data", "map_matrix")
     default_required_input: ClassVar[tuple[str, ...]] = ("data",)
+    default_optional_input: ClassVar = {"map_matrix": None}
     default_output_names: ClassVar[tuple[str, ...]] = ("remapped_data",)
 
     # New Attributes #

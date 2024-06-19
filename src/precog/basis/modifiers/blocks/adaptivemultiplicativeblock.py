@@ -1,4 +1,4 @@
-""" adaptivemultiplicativeoperation.py.py
+""" adaptivemultiplicativeblock.py
 
 """
 # Package Header #
@@ -19,12 +19,12 @@ import numpy as np
 
 # Local Packages #
 from ..adaptivemultiplicativemodifier import AdaptiveMultiplicativeModifier
-from .basismodiferoperation import BasisModifierOperation
+from .basismodiferblock import BasisModifierBlock
 
 
 # Definitions #
 # Classes #
-class AdaptiveMultiplicativeOperation(BasisModifierOperation):
+class AdaptiveMultiplicativeBlock(BasisModifierBlock):
     modifier_type: type[AdaptiveMultiplicativeModifier] = AdaptiveMultiplicativeModifier
 
     # Evaluate

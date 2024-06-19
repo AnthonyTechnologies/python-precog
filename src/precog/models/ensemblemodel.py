@@ -25,7 +25,7 @@ from .bases import BaseModel
 # Definitions #
 class EnsembleModel(BaseModel):
     # Class Attributes #
-    default_trainer: ClassVar[tuple[type, dict[str]]] = (EnsembleTrainer, {"sets_up": False})
+    default_trainer: ClassVar[tuple[type, dict[str]]] = (EnsembleTrainer, {})
 
     # Instance Methods #
     # Architecture

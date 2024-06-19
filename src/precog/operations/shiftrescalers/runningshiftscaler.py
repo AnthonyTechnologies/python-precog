@@ -163,7 +163,7 @@ class RunningShiftScaler(BaseBlock):
             self.previous_mean.fill(self.previous_mean_fill_value)
         return self.previous_mean
 
-    def create_previous_std(self, shape, dtype):
+    def create_previous_variance(self, shape, dtype):
         self.previous_variance = np.expand_dims(np.ones(shape, dtype), self.axis)
         if self.previous_variance_fill_value != 1:
             self.previous_variance.fill(self.previous_variance_fill_value)
@@ -293,20 +293,22 @@ class RunningShiftScaler(BaseBlock):
         """
         # Input
         if self.previous_mean is None:
-            shape = [slice(None)] * len(data.shape)
-            shape[self.axis] = 0
-            self.previous_mean = np.expand_dims(data[tuple(shape)], self.axis)
+            self.previous_mean = data.mean(self.axis, keepdims=True)
         if self.previous_variance is None:
-            shape = list(data.shape)
-            shape.pop(self.axis)
-            self.create_previous_std(shape, data.dtype)
+            if data.shape[self.axis] > 1:
+                self.previous_variance = data.var(self.axis, keepdims=True, mean=self.previous_mean)
+            else:
+                shape = list(data.shape)
+                shape.pop(self.axis)
+                self.create_previous_variance(shape, data.dtype)
 
         # Shift Scaling
         ss_data = self.shift_rescale(data)
 
         # Output
-        # Output
-        if isinstance(data, BaseProxyArray):
+        if ss_data is None:
+            return None
+        elif isinstance(data, BaseProxyArray):
             data_deep = data.dataless_proxy_leaf_copy()
             data_deep.data = ss_data
             return data_deep

@@ -15,4 +15,4 @@ __email__ = __email__
 # Local Packages #
 from .basebasismodifier import BaseBasisModifier
 from .adaptivemultiplicativemodifier import AdaptiveMultiplicativeModifier
-from .oasismodifier import OASISModifier
+# from .oasismodifier import OASISModifier

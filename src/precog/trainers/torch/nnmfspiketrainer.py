@@ -18,13 +18,13 @@ from typing import ClassVar, Any
 
 # Third-Party Packages #
 from blockobjects import BaseBlock, BlockGroup
-from blockobjects.io import DelegatingIOManager, BaseIO, IORouter
+from blockobjects.io import BaseIO, IORouter
 
 # Local Packages #
 from ...architectures.torch import BaseNNMFModule, NNMFDModule
 from ...basis import ModelBasis
 from ...basis.modifiers import AdaptiveMultiplicativeModifier
-from ...basis.modifiers.operations import AdaptiveMultiplicativeOperation
+from ...basis.modifiers.blocks import AdaptiveMultiplicativeBlock
 from ..bases import BaseTrainerBlock
 
 
@@ -36,8 +36,8 @@ class NNMFSpikeTrainer(BlockGroup, BaseTrainerBlock):
     default_output_names:  ClassVar[tuple[str, ...]] = ("bases",)
 
     # Attributes #
-    W_modifier_type: type = AdaptiveMultiplicativeOperation
-    H_modifier_type: type = AdaptiveMultiplicativeOperation
+    W_modifier_type: type = AdaptiveMultiplicativeBlock
+    H_modifier_type: type = AdaptiveMultiplicativeBlock
     W_refiner_type: type = None
     H_refiner_type: type = None
     architecture_type: type = NNMFDModule
@@ -52,7 +52,7 @@ class NNMFSpikeTrainer(BlockGroup, BaseTrainerBlock):
     # Properties #
     @property
     def W_architecture(self) -> BaseNNMFModule | None:
-        if (op := self.operations.get("W_modifier", None)) is not None:
+        if (op := self.blocks.get("W_modifier", None)) is not None:
             return op.module
         else:
             return self._W_architecture
@@ -60,12 +60,12 @@ class NNMFSpikeTrainer(BlockGroup, BaseTrainerBlock):
     @W_architecture.setter
     def W_architecture(self, value: BaseNNMFModule | None) -> None:
         self._W_architecture = value
-        if (op := self.operations.get("W_modifier", None)) is not None:
+        if (op := self.blocks.get("W_modifier", None)) is not None:
             op.modifier.module = value
 
     @property
     def H_architecture(self) -> BaseNNMFModule | None:
-        if (op := self.operations.get("H_modifier", None)) is not None:
+        if (op := self.blocks.get("H_modifier", None)) is not None:
             return op.module
         else:
             return self._H_architecture
@@ -73,7 +73,7 @@ class NNMFSpikeTrainer(BlockGroup, BaseTrainerBlock):
     @H_architecture.setter
     def H_architecture(self, value: BaseNNMFModule | None) -> None:
         self._H_architecture = value
-        if (op := self.operations.get("H_modifier", None)) is not None:
+        if (op := self.blocks.get("H_modifier", None)) is not None:
             op.modifier.module = value
 
     # Magic Methods #
@@ -91,10 +91,7 @@ class NNMFSpikeTrainer(BlockGroup, BaseTrainerBlock):
         create_defaults: bool = False,
         bases_kwargs: dict[str, dict[str, Any]] | None = None,
         subtrainers_kwargs: dict[str, dict[str, Any]] | None = None,
-        operations: Mapping[str, BaseBlock] | None = None,
-        init_io: bool = True,
-        sets_up: bool = True,
-        setup_kwargs: bool = None,
+        blocks: Mapping[str, BaseBlock] | None = None,
         init: bool = True,
         **kwargs: Any,
     ) -> None:
@@ -120,10 +117,7 @@ class NNMFSpikeTrainer(BlockGroup, BaseTrainerBlock):
                 create_defaults=create_defaults,
                 bases_kwargs=bases_kwargs,
                 subtrainers_kwargs=subtrainers_kwargs,
-                operations=operations,
-                init_io=init_io,
-                sets_up=sets_up,
-                setup_kwargs=setup_kwargs,
+                blocks=blocks,
                 **kwargs,
             )
 
@@ -142,10 +136,7 @@ class NNMFSpikeTrainer(BlockGroup, BaseTrainerBlock):
         create_defaults: bool = False,
         bases_kwargs: dict[str, dict[str, Any]] | None = None,
         subtrainers_kwargs: dict[str, dict[str, Any]] | None = None,
-        operations: Mapping[str, BaseBlock] | None = None,
-        init_io: bool = True,
-        sets_up: bool = True,
-        setup_kwargs: bool = None,
+        blocks: Mapping[str, BaseBlock] | None = None,
         **kwargs: Any,
     ) -> None:
         # New Setup #
@@ -172,11 +163,11 @@ class NNMFSpikeTrainer(BlockGroup, BaseTrainerBlock):
 
             state_variables = state_variables.get("local", None)
 
-        if operations is None:
-            operations = {}
+        if blocks is None:
+            blocks = {}
         
         if isinstance(W_modifier, BaseBlock):
-            operations["W_modifier"] = W_modifier
+            blocks["W_modifier"] = W_modifier
         elif isinstance(W_modifier, BaseNNMFModule):
             self.W_architecture = W_modifier
         elif isinstance(W_modifier, AdaptiveMultiplicativeModifier):
@@ -185,7 +176,7 @@ class NNMFSpikeTrainer(BlockGroup, BaseTrainerBlock):
             self.W_modifier_kwargs.update(W_modifier)
             
         if isinstance(H_modifier, BaseBlock):
-            operations["H_modifier"] = H_modifier
+            blocks["H_modifier"] = H_modifier
         elif isinstance(H_modifier, BaseNNMFModule):
             self.H_architecture = H_modifier
         elif isinstance(H_modifier, AdaptiveMultiplicativeModifier):
@@ -194,17 +185,17 @@ class NNMFSpikeTrainer(BlockGroup, BaseTrainerBlock):
             self.H_modifier_kwargs.update(H_modifier)
             
         if isinstance(W_refiner, BaseBlock):
-            operations["W_refiner"] = W_refiner
+            blocks["W_refiner"] = W_refiner
         elif isinstance(W_refiner, dict):
             self.W_refiner_kwargs.update(W_refiner)
             
         if isinstance(H_refiner, BaseBlock):
-            operations["H_refiner"] = H_refiner
+            blocks["H_refiner"] = H_refiner
         elif isinstance(H_refiner, dict):
             self.H_refiner_kwargs.update(H_refiner)
 
-        if not operations:
-            operations = None
+        if not blocks:
+            blocks = None
 
         # Construct Parent #
         super().construct(
@@ -214,10 +205,7 @@ class NNMFSpikeTrainer(BlockGroup, BaseTrainerBlock):
             create_defaults=create_defaults,
             bases_kwargs=bases_kwargs,
             subtrainers_kwargs=subtrainers_kwargs,
-            operations=operations,
-            init_io=init_io,
-            sets_up=sets_up,
-            setup_kwargs=setup_kwargs,
+            blocks=blocks,
             **kwargs,
         )
 
@@ -225,10 +213,10 @@ class NNMFSpikeTrainer(BlockGroup, BaseTrainerBlock):
     def get_state_variables(self) -> dict[str, Any]:
         state_vars = super().get_state_variables()
         state_vars.update({
-            "W_modifer": {} if (W := self.operations.get("W_modifier", None)) is None else W.state_variables,
-            "H_modifer": {} if (H := self.operations.get("H_modifier", None)) is None else H.state_variables,
-            "W_refiner": {} if (w := self.operations.get("W_refiner", None)) is None else w.state_variables,
-            "H_refiner": {} if (h := self.operations.get("H_refiner", None)) is None else h.state_variables,
+            "W_modifer": {} if (W := self.blocks.get("W_modifier", None)) is None else W.state_variables,
+            "H_modifer": {} if (H := self.blocks.get("H_modifier", None)) is None else H.state_variables,
+            "W_refiner": {} if (w := self.blocks.get("W_refiner", None)) is None else w.state_variables,
+            "H_refiner": {} if (h := self.blocks.get("H_refiner", None)) is None else h.state_variables,
         })
         return state_vars
 
@@ -259,8 +247,8 @@ class NNMFSpikeTrainer(BlockGroup, BaseTrainerBlock):
 
         return self.H_modifier_kwargs
 
-    # Operations
-    def create_operations(
+    # Blocks
+    def create_blocks(
         self,
         H_modifier_kwargs: dict[str, Any] | None = None,
         H_refiner_kwargs: dict[str, Any] | None = None,
@@ -270,87 +258,58 @@ class NNMFSpikeTrainer(BlockGroup, BaseTrainerBlock):
         override: bool = False,
         **kwargs: Any,
     ) -> None:
-        # Create Operations
-        if "H_modifier" not in self.operations or override:
-            self.operations["H_modifier"] = self.H_modifier_type(**(H_modifier_kwargs or {}))
+        # Create Blocks
+        if override or "H_modifier" not in self.blocks:
+            self.blocks["H_modifier"] = self.H_modifier_type(**(H_modifier_kwargs or {}))
 
-        if self.H_refiner_type is not None and ("H_refiner" not in self.operations or override):
-            self.operations["H_refiner"] = self.H_refiner_type(**(H_refiner_kwargs or {}))
+        if self.H_refiner_type is not None and (override or "H_refiner" not in self.blocks):
+            self.blocks["H_refiner"] = self.H_refiner_type(**(H_refiner_kwargs or {}))
 
-        if "W_modifier" not in self.operations or override:
-            self.operations["W_modifier"] = self.W_modifier_type(**(W_modifier_kwargs or {}))
+        if override or "W_modifier" not in self.blocks:
+            self.blocks["W_modifier"] = self.W_modifier_type(**(W_modifier_kwargs or {}))
 
-        if self.W_refiner_type is not None and ("W_refiner" not in self.operations or override):
-            self.operations["W_refiner"] = self.W_refiner_type(**(W_refiner_kwargs or {}))
+        if self.W_refiner_type is not None and (override or "W_refiner" not in self.blocks):
+            self.blocks["W_refiner"] = self.W_refiner_type(**(W_refiner_kwargs or {}))
 
     # IO
-    def link_inner_io(self, *args: Any, **kwargs: Any) -> None:
-        # Get Operations
-        H_modifier = self.operations["H_modifier"]
-        H_refiner = self.operations.get("H_refiner", None)
+    def create_inner_io(self, *args: Any, **kwargs: Any) -> None:
+        # Get Blocks
+        H_modifier = self.blocks["H_modifier"]
+        H_refiner = self.blocks.get("H_refiner", None)
 
-        W_modifier = self.operations["W_modifier"]
-        W_refiner = self.operations.get("W_refiner", None)
-
-        # Set Input
-        self.inputs["data"] = H_modifier.inputs["data"]
+        W_modifier = self.blocks["W_modifier"]
+        W_refiner = self.blocks.get("W_refiner", None)
 
         # Inner IO
         if H_refiner is not None:
-            H_modifier.outputs["m_bases"] = bases_separator_H = DelegatingIOManager(names=("H",))
-            bases_separator_H["H"] = H_refiner.inputs["basis"]
-            H_refiner.outputs["r_bases"] = W_modifier.inputs["bases"]
-        else:
-            H_modifier.outputs["m_bases"] = W_modifier.inputs["bases"]
+            H_modifier.outputs["m_bases"] = IORouter(names=("H",))
 
         if W_refiner is not None:
-            W_modifier.outputs["m_bases"] = bases_separator_W = DelegatingIOManager(names=("W",))
-            bases_separator_W["W"] = W_refiner.inputs["bases"]
+            W_modifier.outputs["m_bases"] = IORouter(names=("W",))
+
+    def link_inner_io(self, *args: Any, **kwargs: Any) -> None:
+        # Get Blocks
+        H_modifier = self.blocks["H_modifier"]
+        H_refiner = self.blocks.get("H_refiner", None)
+
+        W_modifier = self.blocks["W_modifier"]
+        W_refiner = self.blocks.get("W_refiner", None)
+
+        # Set Input
+        self.inputs.link_forward("data", H_modifier.inputs, "data")
+
+        # Inner IO
+        if H_refiner is not None:
+            H_modifier.outputs.link_forward("H", H_refiner, "basis")
+            H_refiner.outputs.link_forward("r_bases", self.outputs, "bases")
+        else:
+            H_modifier.outputs.link_forward("m_bases", W_modifier.inputs, "bases")
+
+        if W_refiner is not None:
+            W_modifier.outputs.link_forward("W", W_refiner.inputs, "bases")
 
             # Set Output
-            W_refiner.outputs["r_bases"] = self.outputs["bases"]
+            W_refiner.outputs.link_forward("r_bases", self.outputs, "bases")
         else:
             # Set Output
-            W_modifier.outputs["m_bases"] = self.outputs["bases"]
-
-    # Setup
-    def setup(
-        self,
-        *args: Any,
-        create: bool = True,
-        create_kwargs: dict[str, Any] | None = None,
-        link: bool = True,
-        link_kwargs: dict[str, Any] | None = None,
-        **kwargs: Any,
-    ) -> None:
-        """Creates the inner blocks and links their IO.
-
-        Args:
-            *args: The arguments for setup.
-            create: Determines if the inner operation will be created.
-            create_kwargs: The keyword arguments for creating the inner blocks.
-            link: Determines if the inner IO will be linked between blocks.
-            link_kwargs: The keyword arguments for creating linking the inner blocks' IO.
-            **kwargs: The keyword arguments for setup.
-        """
-        if create_kwargs is None:
-            create_kwargs = {}
-
-        if "W_modifier" not in self.operations:
-            create_kwargs["W_modifier_kwargs"] = self.create_W_modifier_kwargs(
-                **(create_kwargs.get("W_modifier_kwargs", {})),
-            )
-            
-        if "H_modifier" not in self.operations:
-            create_kwargs["H_modifier_kwargs"] = self.create_H_modifier_kwargs(
-                **(create_kwargs.get("H_modifier_kwargs", {})),
-            )
-        
-        super().setup(
-            *args, 
-            create=create,
-            create_kwargs=create_kwargs,
-            link=link,
-            link_kwargs=link_kwargs,
-            **kwargs,
-        )
+            W_modifier.outputs.link_forward("m_bases", self.outputs, "bases")

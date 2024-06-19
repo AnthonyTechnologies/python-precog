@@ -21,7 +21,8 @@ from typing import ClassVar, Any, Callable
 import numpy as np
 from blockobjects import BaseBlock
 from proxyarrays import BaseProxyArray
-from scipy.signal import convolve, hann
+from scipy.signal import convolve
+from scipy.signal.windows import hann
 
 # Local Packages #
 from .basefeature import BaseFeature
@@ -36,6 +37,8 @@ class LineLength(BaseFeature):
     squared_estimator: bool = False
     window_len: int = 0
     window_type: Callable = hann
+
+    preappend: np.ndarray | None = None
 
     # Magic Methods #
     # Construction/Destruction
@@ -109,7 +112,19 @@ class LineLength(BaseFeature):
         Returns:
             The result of the evaluation.
         """
-        data_ll = np.abs(np.diff(data, axis=self.axis))
+        expand_slices = [slice(None)] * data.ndim
+        expand_slices[self.axis] = np.newaxis
+        expand_slices = tuple(expand_slices)
+        if self.preappend is None:
+            slices = [slice(None)] * data.ndim
+            slices[self.axis] = 0
+            data_ll = np.abs(np.diff(data, axis=self.axis, prepend=data[tuple(slices)][expand_slices]))
+        else:
+            data_ll = np.abs(np.diff(data, axis=self.axis, prepend=self.preappend))
+
+        slices = [slice(None)] * data.ndim
+        slices[self.axis] = -1
+        self.preappend = data[tuple(slices)][expand_slices]
 
         if self.squared_estimator:
             data_ll = data_ll ** 2
