@@ -108,12 +108,12 @@ class EnsembleTrainer(BlockGroup, BaseTrainerBlock):
                 self.blocks[name] = trainer
 
     # IO
-    def create_inner_io(self, *args: Any, **kwargs: Any) -> None:
+    def build_io(self, *args: Any, override: Any = False) -> None:
         # Input
-        self.inputs["data"] = IORouter(names=self.blocks.keys())
+        self.inputs.link_forward("data", IORouter(names=self.blocks.keys()))
 
         # Output
-        self.outputs["bases"] = DelegatingIOManager(names=self.blocks.keys())
+        self.outputs.link_forward("bases", DelegatingIOManager(names=self.blocks.keys()))
 
     def link_inner_io(self, *args: Any, **kwargs: Any) -> None:
         for name, block in self.blocks.items():

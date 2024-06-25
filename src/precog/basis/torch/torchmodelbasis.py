@@ -17,6 +17,7 @@ from collections.abc import Iterable, Mapping
 from typing import Any
 
 # Third-Party Packages #
+import numpy as np
 import torch
 from torch import Tensor
 from torch.nn import Parameter
@@ -28,6 +29,25 @@ from ..bases import ModelBasis
 # Definitions #
 # Classes #
 class TorchModelBasis(ModelBasis):
+    # Attributes #
+    detached_tensor_: Tensor | None = None
+    ndarray_: np.ndarray | None = None
+
+    # Properties #
+    @property
+    def detached_tensor(self) -> Tensor | None:
+        """The detached tensor."""
+        if self.detached_tensor_ is None:
+            self.detached_tensor_ = self.tensor.detach()
+        return self.detached_tensor_
+
+    @property
+    def ndarray(self) -> np.ndarray | None:
+        """The numpy array of the tensor."""
+        if self.ndarray_ is None:
+            self.ndarray_ = self.detached_tensor.numpy()
+        return self.ndarray_
+
     # Magic Methods  #
     # Construction/Destruction
     def __init__(

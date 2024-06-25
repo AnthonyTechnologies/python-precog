@@ -29,7 +29,7 @@ class BasisModifierBlock(BaseBlock):
     default_input_names: ClassVar[tuple[str, ...]] = ("data", "bases")
     default_required_input: ClassVar[tuple[str, ...]] = ("data",)
     default_optional_input: ClassVar[dict[str, Any]] = {"bases": None}
-    default_output_names: ClassVar[tuple[str, ...]] = ("m_data",)
+    default_output_names: ClassVar[tuple[str, ...]] = ("m_bases",)
 
     # Attributes #
     modifier_type: type[BaseBasisModifier] | None = None

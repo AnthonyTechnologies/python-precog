@@ -31,6 +31,16 @@ from .basebasismodifier import BaseBasisModifier
 # Classes #
 class AdaptiveMultiplicativeModifier(Optimizer, BaseBasisModifier):
     # Class Attributes #
+    _pickle_exclude = {
+        "_optimizer_step_pre_hooks",
+        "_optimizer_step_post_hooks",
+        "_optimizer_state_dict_pre_hooks",
+        "_optimizer_state_dict_post_hooks",
+        "_optimizer_load_state_dict_pre_hooks",
+        "_optimizer_load_state_dict_post_hooks",
+        "_zero_grad_profile_name",
+        "_warned_capturable_if_run_uncaptured",
+    }
     default_state_variables: ClassVar[dict[str, Any]] = {
         "theta": None,
         "beta": None,
@@ -92,6 +102,19 @@ class AdaptiveMultiplicativeModifier(Optimizer, BaseBasisModifier):
                 bases_kwargs=bases_kwargs,
                 **kwargs,
             )
+
+    # Pickling
+    def __getstate__(self) -> dict[str, Any]:
+        """Creates a dictionary of attributes which can be used to rebuild this object
+
+        Returns:
+            A dictionary of this object's attributes.
+        """
+        state = self.__dict__.copy()
+        for key in self._pickle_exclude:
+            if key in state:
+                del state[key]
+        return state
 
     # Instance Methods  #
     # Constructors/Destructors
@@ -318,3 +341,5 @@ class AdaptiveMultiplicativeModifier(Optimizer, BaseBasisModifier):
             *args,
             **kwargs,
         )
+
+        return dict(self.all_bases)

@@ -22,6 +22,7 @@ import timeit
 
 # Third-Party Packages #
 import pytest
+from blockobjects.process import DEFAULT_PROCESS_CONTEXT
 import numpy as np
 from proxyarrays import TimeSeriesProxy, BlankTimeAxis, ContainerTimeAxis, ContainerTimeSeries
 import torch
@@ -189,6 +190,7 @@ class TestSpikeDetector(ClassTest):
         await spike_detector.stop_async()
 
     def test_proxy_streamer(self):
+        DEFAULT_PROCESS_CONTEXT.select_context("multiprocessing")
         # Create Data Streamer
         sample_rate = 1024.0
         channels = 512
@@ -223,8 +225,10 @@ class TestSpikeDetector(ClassTest):
                 },
             }},
         )
+        submodels["first_model"].trainer.will_proxy = True
 
         model = EnsembleModel(submodels=submodels)
+
 
         # Create Pipeline
         spike_detector = SpikeDetector(
