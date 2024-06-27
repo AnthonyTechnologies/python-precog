@@ -296,7 +296,7 @@ class RunningShiftScaler(BaseBlock):
             self.previous_mean = data.mean(self.axis, keepdims=True)
         if self.previous_variance is None:
             if data.shape[self.axis] > 1:
-                self.previous_variance = data.var(self.axis, keepdims=True, mean=self.previous_mean)
+                self.previous_variance = data.var(self.axis, keepdims=True)  # maybe add mean=self.previous_mean
             else:
                 shape = list(data.shape)
                 shape.pop(self.axis)

@@ -35,12 +35,15 @@ class FilterBank(BaseBlock):
     default_input_names: ClassVar[tuple[str, ...]] = ("data",)
     default_output_names: ClassVar[tuple[str, ...]] = ("filter_data",)
 
+    default_filter_builders: list[BaseFilterBuilder, ...] = []
+    default_filters: list[Filter, ...] = []
+
     # Attributes #
     axis: int = 0
 
     sample_rate: float | None = None
-    filter_builders: list[BaseFilterBuilder, ...] = []
-    filters: list[Filter] = []
+    filter_builders: list[BaseFilterBuilder, ...]
+    filters: list[Filter, ...]
 
     # Magic Methods #
     # Construction/Destruction
@@ -55,8 +58,8 @@ class FilterBank(BaseBlock):
         **kwargs: Any,
     ) -> None:
         # New Attributes #
-        self.filter_builders: list[BaseFilterBuilder, ...] = self.filter_builders.copy()
-        self.filters: list[Filter] = self.filters.copy()
+        self.filter_builders: list[BaseFilterBuilder, ...] = self.default_filter_builders.copy()
+        self.filters: list[Filter, ...] = self.default_filters.copy()
 
         # Parent Attributes #
         super().__init__(*args, init=False, **kwargs)
@@ -149,7 +152,11 @@ class FilterBank(BaseBlock):
             The result of the evaluation.
         """
         # Input
-        data_deep = data.dataless_proxy_leaf_copy() if isinstance(data, BaseProxyArray) else None
+        if  isinstance(data, BaseProxyArray):
+            data_deep = data.dataless_proxy_leaf_copy()
+            data = data.data
+        else:
+            data_deep = None
 
         # Filtering
         for filter_ in self.filters:

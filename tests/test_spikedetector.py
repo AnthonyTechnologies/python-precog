@@ -22,14 +22,14 @@ import timeit
 
 # Third-Party Packages #
 import pytest
-from blockobjects.process import DEFAULT_PROCESS_CONTEXT
 import numpy as np
-from proxyarrays import TimeSeriesProxy, BlankTimeAxis, ContainerTimeAxis, ContainerTimeSeries
 import torch
+from blockobjects.process import DEFAULT_PROCESS_CONTEXT
+from proxyarrays import TimeSeriesProxy, BlankTimeAxis, ContainerTimeAxis, ContainerTimeSeries
 from ucsfbids import Subject
 
 # Local Packages #
-from src.precog.operations import ProxyArrayStreamer
+from src.precog.operations import ProxyArrayStreamer, CDFSStreamer
 from src.precog.models import EnsembleModel
 from src.precog.models.torch import NNMFDTorchModel
 from src.precog.basis.torch import NonNegativeBasis
@@ -60,8 +60,9 @@ class ClassTest:
 
 
 class TestSpikeDetector(ClassTest):
-    subjects_root = pathlib.Path("/data_store0/human/converted_clinical")
-    subject_id = "EC0212"
+    # subjects_root = pathlib.Path("/data_store0/human/converted_clinical")
+    subjects_root = pathlib.Path("//JasperNAS/root_store/subjects")
+    subject_id = "EC0283"
 
     def closest_square(self, n):
         n = int(n)
@@ -72,33 +73,6 @@ class TestSpikeDetector(ClassTest):
             i += 1
         assert n == (i * (n // i))
         return i, n // i
-
-    def make_bipolar(self, lead_group):
-        for l_name in lead_group:
-            sel_lead = lead_group[l_name]
-            n_contact = len(sel_lead['IDs'])
-            if 'grid' in sel_lead['Type']:
-                n_row, n_col = self.closest_square(n_contact)
-            else:
-                n_row, n_col = [n_contact, 1]
-
-            CA = np.arange(len(sel_lead['Contacts'])).reshape((n_row, n_col), order='F')
-
-            lead_group[l_name]['Contact_Pairs_ix'] = []
-
-            if n_row > 1:
-                for bp1, bp2 in zip(CA[:-1, :].flatten(), CA[1:, :].flatten()):
-                    lead_group[l_name]['Contact_Pairs_ix'].append(
-                        (sel_lead['IDs'][bp1],
-                         sel_lead['IDs'][bp2]))
-
-            if n_col > 1:
-                for bp1, bp2 in zip(CA[:, :-1].flatten(), CA[:, 1:].flatten()):
-                    lead_group[l_name]['Contact_Pairs_ix'].append(
-                        (sel_lead['IDs'][bp1],
-                         sel_lead['IDs'][bp2]))
-
-        return lead_group
 
     def make_bipolar(self, montage):
         groups = []
@@ -229,7 +203,6 @@ class TestSpikeDetector(ClassTest):
 
         model = EnsembleModel(submodels=submodels)
 
-
         # Create Pipeline
         spike_detector = SpikeDetector(
             model=model,
@@ -254,6 +227,7 @@ class TestSpikeDetector(ClassTest):
         assert True
 
     def test_evaluate_stream(self):
+        DEFAULT_PROCESS_CONTEXT.select_context("multiprocessing")
         # Import Package
         from xltektools.xltekucsfbids import IEEGXLTEK
 
@@ -268,7 +242,7 @@ class TestSpikeDetector(ClassTest):
         sample_rate = cdfs.data.sample_rates[1]
         montage = ieeg.load_electrodes()
         b_groups, remap = self.make_bipolar(montage)
-        new_map = np.zeros((276 if remap.shape[0] > 128 else 128, remap.shape[1]), dtype="f4")
+        new_map = np.zeros((276 if remap.shape[0] > 128 else 148, remap.shape[1]), dtype="f4")
         new_map[:remap.shape[0], :remap.shape[1]] = remap
 
         # max_channels = np.array(cdfs.data.shapes).max(0)[1]
@@ -304,31 +278,37 @@ class TestSpikeDetector(ClassTest):
                 },
             }},
         )
+        submodels["first_model"].trainer.will_proxy = True
 
         model = EnsembleModel(submodels=submodels)
 
         # Create Pipeline
         spike_detector = SpikeDetector(
             model=model,
-            streamer={"cdfs": cdfs},
+            streamer=CDFSStreamer(cdfs=cdfs),
             remapper={"map_matrix": new_map},
             preprocessing={"sample_rate": sample_rate},
-            standardizer={"forget_factor": 10**-6, "burn_in": 10},  # Todo: Handle burn in (automatic)
+            standardizer={"threshold": 3, "forget_factor": 10 ** -6, "burn_in": 10},
+            time_buffer={
+                "window_time": 10,
+                "window_samples": int(sample_rate * 10),
+                "window_tolerance": 0.0005,
+                "step_time": 0.250,
+                "step_samples": int(sample_rate * 0.250),
+                "step_tolerance": 0.0005,
+                "sample_rate": sample_rate,
+            },
         )
 
         # Select Time Range
         start = datetime.datetime(1970, 1, 7, 0, 5, 0, tzinfo=datetime.timezone.utc)
         stop = datetime.datetime(1970, 1, 7, 1, 5, 10, tzinfo=datetime.timezone.utc)
 
-        streamer = spike_detector.operations["streamer"]
-        streamer.setup(start=start, stop=stop, step=10, approx=True, tails=True)
+        streamer = spike_detector.blocks["streamer"]
+        streamer.setup_kwargs.update(start=start, stop=stop, step=10, approx=True, tails=True)
 
         # Evaluate
-        for i in range(10):
-            spike_detector.evaluate()
-
-        for i in range(500):
-            spike_detector.evaluate()
+        run(self.start_async(spike_detector))
 
         assert True
 
