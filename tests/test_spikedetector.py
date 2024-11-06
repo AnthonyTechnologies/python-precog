@@ -239,7 +239,7 @@ class TestSpikeDetector(ClassTest):
         cdfs.open(mode="r", load=True)
 
         # Remap Channels
-        sample_rate = cdfs.data.sample_rates[1]
+        sample_rate = cdfs.components["contents"].create_contents_proxy().sample_rates[1]
         montage = ieeg.load_electrodes()
         b_groups, remap = self.make_bipolar(montage)
         new_map = np.zeros((276 if remap.shape[0] > 128 else 148, remap.shape[1]), dtype="f4")

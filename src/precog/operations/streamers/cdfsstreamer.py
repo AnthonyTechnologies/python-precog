@@ -16,7 +16,6 @@ __email__ = __email__
 from typing import Any
 
 # Third-Party Packages #
-from cdfs import CDFS
 
 # Local Packages #
 from .proxyarraystreamer import ProxyArrayStreamer
@@ -27,13 +26,13 @@ from .proxyarraystreamer import ProxyArrayStreamer
 class CDFSStreamer(ProxyArrayStreamer):
     default_create_generator: str = "create_islice_time"
 
-    cdfs: CDFS | None = None
+    cdfs = None
 
     # Magic Methods #
     # Construction/Destruction
     def __init__(
         self,
-        cdfs: CDFS | None = None,
+        cdfs: None = None,
         empty_signal: Any = None,
         *args: Any,
         init: bool = True,
@@ -57,7 +56,7 @@ class CDFSStreamer(ProxyArrayStreamer):
     # Constructors/Destructors
     def construct(
         self,
-        cdfs: CDFS | None = None,
+        cdfs: None = None,
         empty_signal: Any = None,
         *args: Any,
         **kwargs: Any,
@@ -72,9 +71,9 @@ class CDFSStreamer(ProxyArrayStreamer):
 
         if cdfs is not None:
             self.cdfs = cdfs
-            if cdfs.data is None:
+            if cdfs.components["contents"].create_contents_proxy() is None:
                 cdfs.open(mode="r", load=True)
-            proxy_array = cdfs.data
+            proxy_array = cdfs.components["contents"].create_contents_proxy()
 
         # Construct Parent #
         super().construct(
