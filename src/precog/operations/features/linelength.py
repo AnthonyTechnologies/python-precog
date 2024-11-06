@@ -20,7 +20,10 @@ from typing import Any, Callable
 # Third-Party Packages #
 import numpy as np
 from scipy.signal import convolve
-from scipy.signal import hann
+try:
+    from scipy.signal.windows import hann
+except ImportError:
+    from scipy.signal import hann
 
 # Local Packages #
 from .basefeature import BaseFeature

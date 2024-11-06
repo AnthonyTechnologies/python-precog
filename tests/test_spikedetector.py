@@ -16,14 +16,14 @@ __email__ = __email__
 # Imports #
 # Standard Libraries #
 import datetime
-import pathlib
+from pathlib import Path
 import timeit
 
 # Third-Party Packages #
 import pytest
 import numpy as np
 import torch
-from ucsfbids import Subject
+from mxbids import Subject
 
 # Local Packages #
 from src.precog.models import EnsembleModel
@@ -56,8 +56,8 @@ class ClassTest:
 
 
 class TestSpikeDetector(ClassTest):
-    subjects_root = pathlib.Path("/data_store0/human/converted_clinical")
-    subject_id = "EC0212"
+    subjects_root = Path("/Users/changlab/Documents/JasperNAS/root_store/updated_subjects")
+    subject_id = "EC0320"
 
     def closest_square(self, n):
         n = int(n)
@@ -146,18 +146,15 @@ class TestSpikeDetector(ClassTest):
         assert detector is not None
 
     def test_evaluate_stream(self):
-        # Import Package
-        from xltektools.xltekucsfbids import IEEGXLTEK
-
         # Select Subject
         bids_subject = Subject(name=self.subject_id, parent_path=self.subjects_root)
         session = bids_subject.sessions["clinicalintracranial"]
         ieeg = session.modalities["ieeg"]
-        cdfs = ieeg.require_cdfs()
-        cdfs.open(mode="r", load=True)
+        cdfs = ieeg.components["cdfs"].get_cdfs()
+        proxy = cdfs.components["contents"].create_contents_proxy()
 
         # Remap Channels
-        sample_rate = cdfs.data.sample_rates[1]
+        sample_rate = proxy.sample_rates[1]
         montage = ieeg.load_electrodes()
         b_groups, remap = self.make_bipolar(montage)
         new_map = np.zeros((276 if remap.shape[0] > 128 else 128, remap.shape[1]), dtype="f4")

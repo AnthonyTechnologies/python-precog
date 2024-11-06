@@ -16,7 +16,7 @@ __email__ = __email__
 from typing import Any
 
 # Third-Party Packages #
-from cdfs import CDFS
+from cdfs import BaseCDFS
 
 # Local Packages #
 from .proxyarraystreamer import ProxyArrayStreamer
@@ -31,17 +31,14 @@ class CDFSStreamer(ProxyArrayStreamer):
     # Construction/Destruction
     def __init__(
         self,
-        cdfs: CDFS | None = None,
+        cdfs: BaseCDFS | None = None,
         empty_signal: Any = None,
         *args: Any,
-        init_io: bool = True,
-        sets_up: bool = False,
-        setup_kwargs: dict[str, Any] | None = None,
         init: bool = True,
         **kwargs: Any,
     ) -> None:
         # New Attributes #
-        self.cdfs: CDFS | None = None
+        self.cdfs: BaseCDFS | None = None
 
         # Parent Attributes #
         super().__init__(*args, init=False, **kwargs)
@@ -52,9 +49,6 @@ class CDFSStreamer(ProxyArrayStreamer):
                 cdfs=cdfs,
                 empty_signal=empty_signal,
                 *args,
-                init_io=init_io,
-                sets_up=sets_up,
-                setup_kwargs=setup_kwargs,
                 **kwargs,
             )
 
@@ -62,7 +56,7 @@ class CDFSStreamer(ProxyArrayStreamer):
     # Constructors/Destructors
     def construct(
         self,
-        cdfs: CDFS | None = None,
+        cdfs: BaseCDFS | None = None,
         empty_signal: Any = None,
         *args: Any,
         init_io: bool = True,
@@ -83,18 +77,15 @@ class CDFSStreamer(ProxyArrayStreamer):
 
         if cdfs is not None:
             self.cdfs = cdfs
-            if cdfs.data is None:
+            if cdfs.components["contents"].create_contents_proxy() is None:
                 cdfs.open(mode="r", load=True)
-            proxy_array = cdfs.data
+            proxy_array = cdfs.components["contents"].create_contents_proxy()
 
         # Construct Parent #
         super().construct(
                 proxy_array=proxy_array,
                 empty_signal=empty_signal,
                 *args,
-                init_io=init_io,
-                sets_up=sets_up,
-                setup_kwargs=setup_kwargs,
                 **kwargs,
             )
 
