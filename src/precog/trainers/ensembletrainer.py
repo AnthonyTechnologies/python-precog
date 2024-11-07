@@ -18,7 +18,7 @@ from typing import ClassVar, Any
 
 # Third-Party Packages #
 from blockobjects import BaseBlock, BlockGroup
-from blockobjects.io import DelegatingIOManager, BaseIO, IORouter
+from blockobjects.io import ArbitratingIOManager, BaseIO, IORouter
 
 # Local Packages #
 from ..architectures.torch import BaseNNMFModule, NNMFDModule
@@ -113,7 +113,7 @@ class EnsembleTrainer(BlockGroup, BaseTrainerBlock):
         self.inputs.link_forward("data", IORouter(names=self.blocks.keys()))
 
         # Output
-        self.outputs.link_forward("bases", DelegatingIOManager(names=self.blocks.keys()))
+        self.outputs.link_forward("bases", ArbitratingIOManager(names=self.blocks.keys()))
 
     def link_inner_io(self, *args: Any, **kwargs: Any) -> None:
         for name, block in self.blocks.items():

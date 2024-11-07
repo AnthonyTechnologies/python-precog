@@ -26,7 +26,7 @@ import numpy as np
 import torch
 from blockobjects.process import DEFAULT_PROCESS_CONTEXT
 from proxyarrays import TimeSeriesProxy, BlankTimeAxis, ContainerTimeAxis, ContainerTimeSeries
-from ucsfbids import Subject
+from mxbids import Subject
 
 # Local Packages #
 from src.precog.operations import ProxyArrayStreamer, CDFSStreamer
@@ -61,7 +61,8 @@ class ClassTest:
 
 class TestSpikeDetector(ClassTest):
     # subjects_root = pathlib.Path("/data_store0/human/converted_clinical")
-    subjects_root = pathlib.Path("//JasperNAS/root_store/subjects")
+    # subjects_root = pathlib.Path("//JasperNAS/root_store/subjects")
+    subjects_root = pathlib.Path("/Users/changlab/Documents/jaspernas/root_store/updated_subjects")
     subject_id = "EC0283"
 
     def closest_square(self, n):
@@ -228,18 +229,16 @@ class TestSpikeDetector(ClassTest):
 
     def test_evaluate_stream(self):
         DEFAULT_PROCESS_CONTEXT.select_context("multiprocessing")
-        # Import Package
-        from xltektools.xltekucsfbids import IEEGXLTEK
 
         # Select Subject
         bids_subject = Subject(name=self.subject_id, parent_path=self.subjects_root)
         session = bids_subject.sessions["clinicalintracranial"]
         ieeg = session.modalities["ieeg"]
-        cdfs = ieeg.require_cdfs()
-        cdfs.open(mode="r", load=True)
+        cdfs = ieeg.components["cdfs"].get_cdfs()
+        proxy = cdfs.components["contents"].create_contents_proxy()
 
         # Remap Channels
-        sample_rate = cdfs.components["contents"].create_contents_proxy().sample_rates[1]
+        sample_rate = proxy.sample_rates[1]
         montage = ieeg.load_electrodes()
         b_groups, remap = self.make_bipolar(montage)
         new_map = np.zeros((276 if remap.shape[0] > 128 else 148, remap.shape[1]), dtype="f4")

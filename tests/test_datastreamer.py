@@ -22,7 +22,7 @@ import timeit
 # Third-Party Packages #
 import pytest
 import numpy as np
-from ucsfbids import Subject
+from mxbids import Subject
 from h5py import Dataset
 import matplotlib.pyplot as plt
 
@@ -58,7 +58,7 @@ class TestCDFSStreamer(ClassTest):
     subject_id = "EC0300"
 
     def test_evaluate_stream(self):
-        from xltektools.xltekucsfbids import IEEGXLTEK
+        from xltektools.xltekmxbids import IEEGXLTEK
         start = datetime.datetime(1970, 1, 7, 0, 5, 0, tzinfo=datetime.timezone.utc)
         stop = datetime.datetime(1970, 1, 7, 0, 9, 10, tzinfo=datetime.timezone.utc)
 
@@ -87,7 +87,7 @@ class TestCDFSStreamer(ClassTest):
         assert True
 
     def test_evaluate_stream_consistency(self):
-        from xltektools.xltekucsfbids import IEEGXLTEK
+        from xltektools.xltekmxbids import IEEGXLTEK
         start = datetime.datetime(1970, 1, 7, 0, 1, 0, tzinfo=datetime.timezone.utc)
         stop = datetime.datetime(1970, 1, 7, 0, 1, 30, tzinfo=datetime.timezone.utc)
 
@@ -128,7 +128,7 @@ class TestCDFSStreamer(ClassTest):
         assert True
 
     def test_evaluate_stream_overlap(self):
-        from xltektools.xltekucsfbids import IEEGXLTEK
+        from xltektools.xltekmxbids import IEEGXLTEK
         start_1 = datetime.datetime(1970, 1, 7, 0, 1, 0, tzinfo=datetime.timezone.utc)
         stop_1 = datetime.datetime(1970, 1, 7, 0, 1, 30, tzinfo=datetime.timezone.utc)
         start_2 = datetime.datetime(1970, 1, 7, 0, 1, 10, tzinfo=datetime.timezone.utc)
