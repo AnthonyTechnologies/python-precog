@@ -71,9 +71,9 @@ class CDFSStreamer(ProxyArrayStreamer):
 
         if cdfs is not None:
             self.cdfs = cdfs
-            if cdfs.components["contents"].create_contents_proxy() is None:
+            if cdfs.components["contents"].require_contents_proxy() is None:
                 cdfs.open(mode="r", load=True)
-            proxy_array = cdfs.components["contents"].create_contents_proxy()
+            proxy_array = cdfs.components["contents"].require_contents_proxy()
 
         # Construct Parent #
         super().construct(

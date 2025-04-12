@@ -235,7 +235,7 @@ class TestSpikeDetector(ClassTest):
         session = bids_subject.sessions["clinicalintracranial"]
         ieeg = session.modalities["ieeg"]
         cdfs = ieeg.components["cdfs"].get_cdfs()
-        proxy = cdfs.components["contents"].create_contents_proxy()
+        proxy = cdfs.components["contents"].require_contents_proxy()
 
         # Remap Channels
         sample_rate = proxy.sample_rates[1]

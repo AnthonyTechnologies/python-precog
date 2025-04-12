@@ -18,7 +18,7 @@ from copy import deepcopy
 from typing import ClassVar, Any
 
 # Third-Party Packages #
-from baseobjects.functions import CallableMultiplexObject, MethodMultiplexer
+from baseobjects.functions import MethodMultiplexer
 from blockobjects import BaseBlock
 import numpy as np
 from proxyarrays import BaseProxyArray

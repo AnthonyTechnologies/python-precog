@@ -16,7 +16,7 @@ __email__ = __email__
 from typing import ClassVar, Any
 
 # Third-Party Packages #
-from baseobjects.functions import CallableMultiplexer, CallableMultiplexObject, FunctionRegister
+from baseobjects.functions import CallableMultiplexer, FunctionRegister
 from torch import Tensor
 from torch.nn.functional import conv1d, conv2d, conv3d
 from torch.nn import Parameter
@@ -27,7 +27,7 @@ from .basennmfmodule import BaseNNMFModule
 
 
 # Definitions #
-class NNMFDModule(CallableMultiplexObject, BaseNNMFModule):
+class NNMFDModule(BaseNNMFModule):
     # Class Attributes #
     conv_register: ClassVar[FunctionRegister] = FunctionRegister(
         conv1d=conv1d,

@@ -54,17 +54,16 @@ class ClassTest:
 
 
 class TestCDFSStreamer(ClassTest):
-    subjects_root = pathlib.Path("/data_store0/human/converted_clinical")
+    subjects_path = pathlib.Path("//JasperNAS/root_store/epilepsy_subjects/sub-EC0320")
     subject_id = "EC0300"
 
     def test_evaluate_stream(self):
-        from xltektools.xltekmxbids import IEEGXLTEK
         start = datetime.datetime(1970, 1, 7, 0, 5, 0, tzinfo=datetime.timezone.utc)
         stop = datetime.datetime(1970, 1, 7, 0, 9, 10, tzinfo=datetime.timezone.utc)
 
-        bids_subject = Subject(name=self.subject_id, parent_path=self.subjects_root)
-        session = bids_subject.sessions["clinicalintracranial"]
-        cdfs = session.modalities["ieeg"].require_cdfs()
+        bids_subject = Subject(path=self.subjects_path, load=True, load_sessions=True, load_modalities=True)
+        session = bids_subject.sessions["clinicalintracranial"]  # The recording name
+        cdfs = session.modalities["ieeg"].components["cdfs"].get_cdfs()  # Get the data loading object
 
         streamer = CDFSStreamer(cdfs=cdfs)
         streamer.setup(start=start, stop=stop, step=10, approx=True, tails=True)
@@ -87,22 +86,26 @@ class TestCDFSStreamer(ClassTest):
         assert True
 
     def test_evaluate_stream_consistency(self):
-        from xltektools.xltekmxbids import IEEGXLTEK
-        start = datetime.datetime(1970, 1, 7, 0, 1, 0, tzinfo=datetime.timezone.utc)
-        stop = datetime.datetime(1970, 1, 7, 0, 1, 30, tzinfo=datetime.timezone.utc)
+        bids_subject = Subject(path=self.subjects_path, load=True, load_sessions=True, load_modalities=True)
+        session = bids_subject.sessions["clinicalintracranial"]  # The recording name
+        cdfs = session.modalities["ieeg"].components["cdfs"].get_cdfs()  # Get the data loading object
 
-        bids_subject = Subject(name=self.subject_id, parent_path=self.subjects_root)
-        session = bids_subject.sessions["clinicalintracranial"]
-        cdfs = session.modalities["ieeg"].require_cdfs()
+        proxy = cdfs.components["contents"].require_contents_proxy()
 
-        streamer = CDFSStreamer(cdfs=cdfs)
-        streamer.setup(start=start, stop=stop, step=1, approx=True, tails=True)
+        subject_start = proxy.start_datetime
+        start = (subject_start + datetime.timedelta(days=1)).replace(hour=1, minute=0, second=0, microsecond=0)
+        stop = start + datetime.timedelta(minutes=15)
 
-        all_data = cdfs.data.find_data_slice(start=start, stop=stop)
+        all_data = proxy.find_data_slice(start=start, stop=stop, approx=True)
         data = np.array(all_data[0])
 
+        streamer = CDFSStreamer(cdfs=cdfs)
+        streamer.setup(start=start, stop=stop, step=10, approx=True, tails=True)
+
         outs = []
+        shapes = []
         while (seg := streamer.evaluate()) is not None:
+            shapes.append(seg.shape)
             outs.append(seg)
 
         iter_concat = np.concatenate(outs, axis=0)
@@ -134,9 +137,9 @@ class TestCDFSStreamer(ClassTest):
         start_2 = datetime.datetime(1970, 1, 7, 0, 1, 10, tzinfo=datetime.timezone.utc)
         stop_2 = datetime.datetime(1970, 1, 7, 0, 1, 40, tzinfo=datetime.timezone.utc)
 
-        bids_subject = Subject(name=self.subject_id, parent_path=self.subjects_root)
-        session = bids_subject.sessions["clinicalintracranial"]
-        cdfs = session.modalities["ieeg"].require_cdfs()
+        bids_subject = Subject(path=self.subjects_path, load=True, load_sessions=True, load_modalities=True)
+        session = bids_subject.sessions["clinicalintracranial"]  # The recording name
+        cdfs = session.modalities["ieeg"].components["cdfs"].get_cdfs()  # Get the data loading object
 
         streamer = CDFSStreamer(cdfs=cdfs)
         streamer.setup(start=start_1, stop=stop_1, step=1, approx=True, tails=True)
